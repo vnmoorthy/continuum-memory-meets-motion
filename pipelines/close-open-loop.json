@@ -1,0 +1,64 @@
+{
+  "name": "close-open-loop",
+  "version": "1.0.0",
+  "description": "Continuum Motion pipeline: retrieve durable memory, reason, enrich, act, write back.",
+  "runtime": "rocketride",
+  "metadata": {
+    "hackathon": "Memory Meets Motion",
+    "sponsors": ["RocketRide", "FalkorDB", "Linkup", "LaserData"]
+  },
+  "nodes": [
+    {
+      "id": "input",
+      "type": "input",
+      "config": { "schema": { "loopId": "string" } }
+    },
+    {
+      "id": "memory_retrieve",
+      "type": "graph.query",
+      "provider": "falkordb",
+      "config": {
+        "cypher": "MATCH (l:Loop {id: $loopId})-[*1..2]-(n) RETURN l, n"
+      }
+    },
+    {
+      "id": "reason",
+      "type": "llm",
+      "config": {
+        "model": "auto",
+        "system": "You close open loops using durable organizational memory. Be concrete."
+      }
+    },
+    {
+      "id": "live_context",
+      "type": "web.search",
+      "provider": "linkup",
+      "config": { "depth": "standard" }
+    },
+    {
+      "id": "act",
+      "type": "agent",
+      "config": { "tools": ["draft", "checklist", "research_note"] }
+    },
+    {
+      "id": "writeback",
+      "type": "graph.write",
+      "provider": "falkordb",
+      "config": { "closeLoop": true }
+    },
+    {
+      "id": "stream",
+      "type": "events.emit",
+      "provider": "laserdata",
+      "config": { "channel": "continuum.runs" }
+    }
+  ],
+  "edges": [
+    ["input", "memory_retrieve"],
+    ["memory_retrieve", "reason"],
+    ["reason", "live_context"],
+    ["live_context", "act"],
+    ["act", "writeback"],
+    ["writeback", "stream"]
+  ]
+}
