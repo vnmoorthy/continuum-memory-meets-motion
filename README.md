@@ -6,49 +6,67 @@ Continuum bridges long-term AI **Memory** with autonomous **Motion** by measurin
 
 Built for [Memory Meets Motion](https://luma.com/iu9svaun).
 
+> **DEMO by default.** Simulations are labeled in the UI, APIs (`_meta.mode`), events, and artifacts. This is not a live multi-tenant production deployment unless you add Postgres (`DATABASE_URL`) and real connector credentials under `CONTINUUM_MODE=connected`.
+
 ![Continuum](./public/og.png)
-
-> Durable team memory → Cited Motion agents that close real work → results written back into the graph → Open Loop Debt goes down.
-
----
-
-## The idea
-
-| Theme | Continuum |
-| --- | --- |
-| Long-term AI context (Memory) | Property graph of people, projects, decisions, artifacts, and open loops |
-| Autonomous agentic execution (Motion) | RocketRide-compatible `close-open-loop` pipeline |
-| Stateful AI | Every run writes back artifacts + close edges; debt metrics update live |
-| Trust | **Cited Motion** — every artifact lists memory node IDs/titles |
-| Proactivity | Watchdogs simulate LaserData-style triggers (stale / due-soon / revenue) |
-
-### Open Loop Debt
-
-```text
-score ≈ priorityWeight × ageFactor × dollarFactor × dueBoost
-```
-
-The command center shows open-loop debt score (before → after), dollars at risk, hours trapped, and lifetime debt burned. Seed data includes an Acme Health renewal carrying **$220k ARR** so the impact is visible immediately.
 
 ---
 
 ## Quick start
 
 ```bash
-npm install
+# Node 20–24 (see package.json engines)
+npm ci
 npm run dev
 ```
 
 Open **http://localhost:3000**
 
+Optional env (see `.env.example`):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CONTINUUM_MODE` | `demo` | `demo` or `connected` |
+| `CONTINUUM_SESSION_SECRET` | dev fallback | HMAC secret for demo session cookie |
+| `CONTINUUM_DB_PATH` | `data/continuum.sqlite` | SQLite file (WAL) |
+| `DATABASE_URL` | unset | Required for multi-instance production (Postgres) — **not implemented in demo profile** |
+
 ### Demo path (~90 seconds)
 
-1. Landing — Continuum as Open Loop OS  
-2. `/app` — Open Loop Debt dashboard (note $ at risk)  
-3. Click **Close My Morning** (or close the Acme renewal brief)  
-4. `/app/runs` — Cited Motion steps + artifact with `## Citations`  
-5. Debt drops; loop status → closed; artifact appears in the graph  
-6. Optional: **Watchdogs → Scan now** or **Ingest residue** on `/app/loops`
+1. Landing — Continuum as Open Loop OS (note DEMO banner in `/app`)
+2. `/app` — Open Loop Debt dashboard (**$268k** unique risk: Acme $220k + pilot $48k)
+3. Click **Close My Morning** (or close the Acme renewal brief)
+4. `/app/runs` — Cited Motion steps + artifact with `## Citations` (DEMO-labeled research/notify)
+5. Debt drops; loop status → closed; artifact appears in the graph
+
+---
+
+## Safety model (post-audit)
+
+| Invariant | Behavior |
+| --- | --- |
+| Concurrent runs | ≤1 active run per loop; `Idempotency-Key`; `409` returns existing |
+| Validation | Zod; invalid `tags` → `422` |
+| Jobs | Durable `jobs` rows + leases; crash recovery |
+| Persistence | SQLite WAL transactions; no silent reseed on corruption |
+| Auth | Signed httpOnly session; workspace-scoped data |
+| Accounting | `risk_entities` — Acme ARR counted once |
+
+Architecture decision: [`docs/adr/001-audit-hardening.md`](./docs/adr/001-audit-hardening.md)  
+Before/after table: [`docs/AUDIT_BEFORE_AFTER.md`](./docs/AUDIT_BEFORE_AFTER.md)
+
+---
+
+## Scripts
+
+```bash
+npm run lint
+npm run typecheck
+npm test              # vitest P0 suite
+npm run build
+npm run test:e2e      # playwright smoke (needs build + playwright browsers)
+npm run ci
+```
 
 ---
 
@@ -60,47 +78,29 @@ Open **http://localhost:3000**
 | `/app` | Debt dashboard · graph · watchdogs · Close My Morning |
 | `/app/memory` | Interactive graph · filter · add memory |
 | `/app/loops` | Loop inbox · residue ingest |
-| `/app/runs` | Live runs · steps · citations · debt delta |
-| `/app/settings` | Integrations · reset seed |
+| `/app/runs` | Runs · steps · citations · debt delta (poll + optional SSE) |
+| `/app/settings` | Mode honesty · reset seed |
 
 ### APIs
 
+All mutate/read paths are workspace-scoped via demo session cookie. Responses include `_meta: { mode, demo, label }`.
+
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /api/metrics` | Open Loop Debt metrics |
+| `GET /api/metrics` | Open Loop Debt metrics (unique risk dollars) |
 | `GET/PATCH/POST /api/watchdogs` | List / toggle / Scan now |
-| `POST /api/morning` | Close My Morning (top 1–2 by debt) |
-| `GET/POST /api/runs` | Motion runs |
+| `POST /api/morning` | Close My Morning |
+| `GET/POST /api/runs` | Motion runs (`Idempotency-Key` supported) |
 | `GET/POST /api/memory` | Graph snapshot / create / reset |
 | `POST /api/ingest` | Residue → event + open loop |
-| `GET /api/events?runId=` | SSE telemetry |
+| `GET /api/events?runId=` | Best-effort SSE (poll `/api/runs` as source of truth) |
 | `GET /api/search` | Memory search |
-
----
-
-## Architecture
-
-Full narrative + diagrams: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
-
-```mermaid
-flowchart LR
-  Residue[Meeting residue] --> Graph[(Memory Graph)]
-  Graph --> Debt[Open Loop Debt]
-  Debt --> Queue[Open Loops]
-  Watchdogs[Watchdogs / Morning] --> Queue
-  Queue --> Motion[Cited Motion Pipeline]
-  Motion --> Artifact[Cited Artifact]
-  Artifact --> Graph
-  Motion --> Stream[SSE Event Stream]
-```
-
-Sponsor-aligned surfaces: **FalkorDB** (graph) · **RocketRide** (pipeline JSON) · **Linkup** (live context) · **LaserData** (watchdog/event triggers). Guild/Snyk are natural extension points for eval and security.
 
 ---
 
 ## Stack
 
-Next.js 16 · TypeScript · Tailwind 4 · Framer Motion · React Flow · local JSON graph store (FalkorDB-ready)
+Next.js 16 · TypeScript · Tailwind 4 · Framer Motion · React Flow · **SQLite WAL** (`better-sqlite3`) · Zod · Vitest · Playwright
 
 ---
 
@@ -108,7 +108,6 @@ Next.js 16 · TypeScript · Tailwind 4 · Framer Motion · React Flow · local J
 
 - Deck: [`slides/Continuum-Memory-Meets-Motion.pptx`](./slides/Continuum-Memory-Meets-Motion.pptx)
 - 3-min storyboard: [`docs/PRESENTATION.md`](./docs/PRESENTATION.md)
-- External LLM prompts (pitch / Q&A / social): [`HELP_FROM_CHATGPT.md`](./HELP_FROM_CHATGPT.md)
 
 ```bash
 npm run slides   # regenerate PowerPoint
