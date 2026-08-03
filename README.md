@@ -1,139 +1,238 @@
-# Continuum — Open Loop OS
+<div align="center">
+
+# Continuum
+
+### The Open Loop OS
 
 **Memory that moves. Debt you can burn.**
 
-Continuum bridges long-term AI **Memory** with autonomous **Motion** by measuring and closing **Open Loop Debt** — unfinished work that chat logs forget and agents rarely finish.
+[![Live Demo](https://img.shields.io/badge/demo-live-E4FF5C?style=for-the-badge&labelColor=07090C)](https://continuum-memory-meets-motion.vercel.app)
+[![CI](https://img.shields.io/github/actions/workflow/status/vnmoorthy/continuum-memory-meets-motion/ci.yml?branch=main&style=for-the-badge&label=CI&labelColor=07090C)](https://github.com/vnmoorthy/continuum-memory-meets-motion/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-5EC8C0?style=for-the-badge&labelColor=07090C)](./LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-white?style=for-the-badge&labelColor=07090C&logo=nextdotjs)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&labelColor=07090C&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-Built for [Memory Meets Motion](https://luma.com/iu9svaun).
+[Live Product](https://continuum-memory-meets-motion.vercel.app) ·
+[Architecture](./docs/ARCHITECTURE.md) ·
+[3‑min Pitch](./docs/PRESENTATION.md) ·
+[Deck (PPTX)](./slides/Continuum-Memory-Meets-Motion.pptx) ·
+[Contributing](./CONTRIBUTING.md)
 
-> **DEMO by default.** Simulations are labeled in the UI, APIs (`_meta.mode`), events, and artifacts. This is not a live multi-tenant production deployment unless you add Postgres (`DATABASE_URL`) and real connector credentials under `CONTINUUM_MODE=connected`.
+<br/>
 
-![Continuum](./public/og.png)
+<img src="./public/og.png" alt="Continuum — Open Loop OS" width="920" />
 
----
+<sub>Built for <a href="https://luma.com/iu9svaun">Memory Meets Motion</a> — Agentic Workflows & Stateful AI</sub>
 
-## Quick start
-
-```bash
-# Node 20–24 (see package.json engines)
-npm ci
-npm run dev
-```
-
-Open **http://localhost:3000**
-
-Optional env (see `.env.example`):
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `CONTINUUM_MODE` | `demo` | `demo` or `connected` |
-| `CONTINUUM_SESSION_SECRET` | dev fallback | HMAC secret for demo session cookie |
-| `CONTINUUM_DB_PATH` | `data/continuum.sqlite` | SQLite file (WAL) |
-| `DATABASE_URL` | unset | Required for multi-instance production (Postgres) — **not implemented in demo profile** |
-| `ROCKETRIDE_APIKEY` | unset | Live RocketRide Cloud pipeline submit |
-| `FALKORDB_HOST` | unset | Mirror memory graph into FalkorDB |
-| `LINKUP_API_KEY` | unset | Live Linkup web research |
-| `LASER_URI` / `LASER_LOCAL` | unset | LaserData/Iggy event streams |
-| `GUILD_API_KEY` | unset | Guild workspace token (local experiment writer always on) |
-| `SNYK_TOKEN` | unset | Authenticated Snyk scans (`npm run snyk:test`) |
-
-### Sponsor SDKs (all installed)
-
-| Sponsor | Package | Where it runs |
-| --- | --- | --- |
-| RocketRide | `rocketride` | Motion tool step submits `pipelines/close-open-loop.json` when keyed |
-| FalkorDB | `falkordb` | Mirrors artifact nodes/edges after write-back |
-| Linkup | `linkup-sdk` | Research enrichment during Motion |
-| LaserData | `@laserdata/laser-sdk` | Motion + watchdog events (`continuum.events` / JSONL fallback) |
-| Guild.ai | `@guildai/cli` + `.guild/continuum-runs` | Experiment records per completed run |
-| Snyk | `snyk` | Settings → Run Snyk scan / `npm run snyk:test` |
-
-Live status: **Settings** or `GET /api/sponsors`. Without keys, each adapter reports `not_configured` and stays DEMO — it does not invent live delivery.
-
-### Demo path (~90 seconds)
-
-1. Landing — Continuum as Open Loop OS (note DEMO banner in `/app`)
-2. `/app` — Open Loop Debt dashboard (**$268k** unique risk: Acme $220k + pilot $48k)
-3. Click **Close My Morning** (or close the Acme renewal brief)
-4. `/app/runs` — Cited Motion steps + artifact with `## Citations` (DEMO-labeled research/notify)
-5. Debt drops; loop status → closed; artifact appears in the graph
+</div>
 
 ---
 
-## Safety model (post-audit)
+## Why Continuum exists
 
-| Invariant | Behavior |
+Organizations don’t fail because they lack notes.  
+They fail because **unfinished work compounds** — meetings without owners, Friday briefs that never ship, renewals that quietly slip.
+
+We call that **Open Loop Debt**.
+
+| Most AI today | Continuum |
 | --- | --- |
-| Concurrent runs | ≤1 active run per loop; `Idempotency-Key`; `409` returns existing |
-| Validation | Zod; invalid `tags` → `422` |
-| Jobs | Durable `jobs` rows + leases; crash recovery |
-| Persistence | SQLite WAL transactions; no silent reseed on corruption |
-| Auth | Signed httpOnly session; workspace-scoped data |
-| Accounting | `risk_entities` — Acme ARR counted once |
+| Remembers fragments in a chat log | Durable **graph memory** of people, projects, decisions |
+| Drafts text and stops | **Cited Motion** that closes the loop |
+| Can’t show impact | **Open Loop Debt** score + unique **$ at risk** |
+| Forgets what it just did | **Write-back** — artifacts & edges return to memory |
 
-Architecture decision: [`docs/adr/001-audit-hardening.md`](./docs/adr/001-audit-hardening.md)  
-Before/after table: [`docs/AUDIT_BEFORE_AFTER.md`](./docs/AUDIT_BEFORE_AFTER.md)
+> Continuum is not another chatbot.  
+> It’s the substrate that makes **Memory meet Motion**.
 
 ---
 
-## Scripts
+## 90‑second wow path
+
+1. Open the [live demo](https://continuum-memory-meets-motion.vercel.app) → **Enter**
+2. On **Command**, find **Open Loop Debt** and **$ at risk** (Acme Health **$220k** in seed)
+3. Click **Close My Morning**
+4. Open the run → scroll to **`## Citations`**
+5. Watch debt **before → after** as the loop closes and the brief lands in the graph
 
 ```bash
-npm run lint
-npm run typecheck
-npm test              # vitest P0 suite
-npm run build
-npm run test:e2e      # playwright smoke (needs build + playwright browsers)
-npm run ci
+npm ci && npm run dev
+# → http://localhost:3000
 ```
 
 ---
 
 ## Product surface
 
-| Route | Purpose |
+| Route | What you get |
 | --- | --- |
-| `/` | Brand landing |
-| `/app` | Debt dashboard · graph · watchdogs · Close My Morning |
-| `/app/memory` | Interactive graph · filter · add memory |
-| `/app/loops` | Loop inbox · residue ingest |
-| `/app/runs` | Runs · steps · citations · debt delta (poll + optional SSE) |
-| `/app/settings` | Mode honesty · reset seed |
-
-### APIs
-
-All mutate/read paths are workspace-scoped via demo session cookie. Responses include `_meta: { mode, demo, label }`.
-
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /api/metrics` | Open Loop Debt metrics (unique risk dollars) |
-| `GET/PATCH/POST /api/watchdogs` | List / toggle / Scan now |
-| `POST /api/morning` | Close My Morning |
-| `GET/POST /api/runs` | Motion runs (`Idempotency-Key` supported) |
-| `GET/POST /api/memory` | Graph snapshot / create / reset |
-| `POST /api/ingest` | Residue → event + open loop |
-| `GET /api/events?runId=` | Best-effort SSE (poll `/api/runs` as source of truth) |
-| `GET /api/search` | Memory search |
+| [`/`](https://continuum-memory-meets-motion.vercel.app/) | Full‑bleed brand landing |
+| [`/app`](https://continuum-memory-meets-motion.vercel.app/app) | Debt dashboard · live graph · watchdogs · Close My Morning |
+| [`/app/memory`](https://continuum-memory-meets-motion.vercel.app/app/memory) | Interactive memory graph |
+| [`/app/loops`](https://continuum-memory-meets-motion.vercel.app/app/loops) | Open loop inbox · residue ingest |
+| [`/app/runs`](https://continuum-memory-meets-motion.vercel.app/app/runs) | Motion runs · steps · citations · debt delta |
+| [`/app/settings`](https://continuum-memory-meets-motion.vercel.app/app/settings) | Sponsor SDK status · DEMO honesty · reset seed |
 
 ---
 
-## Stack
+## Architecture
 
-Next.js 16 · TypeScript · Tailwind 4 · Framer Motion · React Flow · **SQLite WAL** (`better-sqlite3`) · Zod · Vitest · Playwright
+```mermaid
+flowchart LR
+  subgraph UI["Continuum Web"]
+    Command[Command]
+    Graph[Memory Graph]
+    Runs[Motion Runs]
+  end
+
+  subgraph API["API + Jobs"]
+    REST[REST + Zod]
+    Jobs[Leased job worker]
+  end
+
+  subgraph Memory["Memory Plane"]
+    SQLite[(SQLite WAL)]
+    Falkor[FalkorDB mirror]
+    Debt[Open Loop Debt]
+  end
+
+  subgraph Motion["Motion Plane"]
+    Pipe[close-open-loop]
+    RR[RocketRide]
+    Linkup[Linkup]
+    Laser[LaserData]
+    Guild[Guild experiments]
+  end
+
+  Command --> REST
+  Graph --> REST
+  Runs --> REST
+  REST --> SQLite
+  REST --> Debt
+  REST --> Jobs
+  Jobs --> Pipe
+  Pipe --> Linkup
+  Pipe --> RR
+  Pipe --> SQLite
+  Pipe --> Falkor
+  Pipe --> Laser
+  Pipe --> Guild
+  Debt --> SQLite
+```
+
+Deep dive: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) · ADR: [`docs/adr/001-audit-hardening.md`](./docs/adr/001-audit-hardening.md)
 
 ---
 
-## Pitch materials
+## Sponsor SDKs — installed & invoked
 
-- Deck: [`slides/Continuum-Memory-Meets-Motion.pptx`](./slides/Continuum-Memory-Meets-Motion.pptx)
-- 3-min storyboard: [`docs/PRESENTATION.md`](./docs/PRESENTATION.md)
+Every Memory Meets Motion sponsor client is in the tree. Without keys, adapters stay **honestly DEMO**. With keys, the same code paths go live.
+
+| Sponsor | Package | Role |
+| --- | --- | --- |
+| **RocketRide** | `rocketride` | Submit `pipelines/close-open-loop.json` |
+| **FalkorDB** | `falkordb` | Mirror nodes/edges via OpenCypher |
+| **Linkup** | `linkup-sdk` | Live web research during Motion |
+| **LaserData** | `@laserdata/laser-sdk` | Durable Motion / watchdog events |
+| **Guild.ai** | `@guildai/cli` + `.guild/` | Experiment records per run |
+| **Snyk** | `snyk` | Dependency security scans |
+
+Status UI: **Settings** · API: `GET /api/sponsors`
+
+---
+
+## Hardened by design
+
+| Invariant | Behavior |
+| --- | --- |
+| Concurrent runs | ≤1 active run / loop · `Idempotency-Key` · `409` on conflict |
+| Validation | Zod on bodies & persisted entities · bad `tags` → `422` |
+| Jobs | Durable rows + leases · crash recovery |
+| Persistence | SQLite WAL transactions · **no silent reseed** on corruption |
+| Auth | Signed httpOnly demo session · workspace isolation |
+| Accounting | `risk_entities` — Acme **$220k counted once** (never $440k) |
+| Honesty | DEMO labels on simulated research / notify / metrics |
+
+---
+
+## Quick start
 
 ```bash
-npm run slides   # regenerate PowerPoint
+git clone https://github.com/vnmoorthy/continuum-memory-meets-motion.git
+cd continuum-memory-meets-motion
+npm ci
+cp .env.example .env.local   # optional sponsor keys
+npm run dev
+```
+
+**Node 20–24** · see `package.json` → `engines`
+
+### Scripts
+
+```bash
+npm run dev          # local app
+npm run build        # production build
+npm run typecheck
+npm test             # vitest (incl. concurrency + sponsors)
+npm run test:e2e     # playwright smoke
+npm run slides       # regenerate PPTX
+npm run snyk:test    # security scan
+npm run ci           # lint + types + tests + build
+```
+
+Env reference: [`.env.example`](./.env.example)
+
+---
+
+## Pitch kit
+
+| Asset | Link |
+| --- | --- |
+| 10‑slide deck | [`slides/Continuum-Memory-Meets-Motion.pptx`](./slides/Continuum-Memory-Meets-Motion.pptx) |
+| 3‑min spoken storyboard | [`docs/PRESENTATION.md`](./docs/PRESENTATION.md) |
+| Architecture | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
+| Audit before/after | [`docs/AUDIT_BEFORE_AFTER.md`](./docs/AUDIT_BEFORE_AFTER.md) |
+
+---
+
+## Project layout
+
+```text
+continuum/
+├── src/app              # Next.js App Router (UI + API)
+├── src/components       # Landing, shell, graph, debt, watchdogs
+├── src/lib
+│   ├── motion/          # Cited Motion runtime
+│   ├── sponsors/        # RocketRide · FalkorDB · Linkup · Laser · Guild · Snyk
+│   ├── store/           # SQLite WAL + migrations
+│   └── jobs/            # Leased worker
+├── pipelines/           # close-open-loop.json
+├── docs/                # Architecture, ADR, pitch script
+├── slides/              # Hackathon deck
+└── tests/ + e2e/        # Vitest + Playwright
+```
+
+---
+
+## Contributing
+
+We welcome PRs that reduce Open Loop Debt — features, hardening, docs, design.
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)
+
+```text
+★ Star this repo if Memory should move — not just recall.
 ```
 
 ---
 
 ## License
 
-MIT © 2026 Continuum / Memory Meets Motion
+[MIT](./LICENSE) © 2026 [vnmoorthy](https://github.com/vnmoorthy)
+
+<div align="center">
+  <br/>
+  <sub>Close the loop.</sub>
+</div>

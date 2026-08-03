@@ -2,6 +2,32 @@
   "name": "continuum",
   "version": "0.1.0",
   "private": true,
+  "description": "Continuum — Open Loop OS. Measure Open Loop Debt, close it with Cited Motion, write results back into durable graph memory.",
+  "homepage": "https://continuum-memory-meets-motion.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vnmoorthy/continuum-memory-meets-motion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vnmoorthy/continuum-memory-meets-motion/issues"
+  },
+  "license": "MIT",
+  "author": "vnmoorthy",
+  "keywords": [
+    "continuum",
+    "open-loop-debt",
+    "cited-motion",
+    "ai-agents",
+    "knowledge-graph",
+    "memory",
+    "stateful-ai",
+    "agentic-workflows",
+    "nextjs",
+    "falkordb",
+    "rocketride",
+    "linkup",
+    "laserdata"
+  ],
   "engines": {
     "node": ">=20 <25"
   },
