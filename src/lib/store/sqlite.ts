@@ -21,6 +21,10 @@ function resolveDbPath(): string {
   if (process.env.DATABASE_URL?.startsWith("file:")) {
     return path.resolve(process.env.DATABASE_URL.slice("file:".length));
   }
+  // Vercel/serverless: /var/task is read-only; use /tmp (ephemeral per instance).
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join("/tmp", "continuum.sqlite");
+  }
   return path.join(process.cwd(), "data", "continuum.sqlite");
 }
 
