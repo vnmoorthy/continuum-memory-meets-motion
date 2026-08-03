@@ -1,35 +1,52 @@
 import { NextResponse } from "next/server";
+import { withWorkspace, jsonOk, handleApiError } from "@/lib/api/http";
 import { rankLoopsForMorning } from "@/lib/debt";
 import { startAndExecute } from "@/lib/motion/runtime";
+import { MorningBodySchema, zodErrorResponse } from "@/lib/schemas";
 import { getSnapshot } from "@/lib/store/db";
+import { modePayload } from "@/lib/mode";
 
-/** Close My Morning — rank open loops by Open Loop Debt and run top N. */
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const limit = Math.min(Math.max(Number(body?.limit ?? 2), 1), 3);
-  const snapshot = await getSnapshot();
-  const targets = rankLoopsForMorning(snapshot, limit);
-
-  if (targets.length === 0) {
-    return NextResponse.json({ message: "No open loops to close", runs: [] });
-  }
-
-  const runs = [];
-  for (const loop of targets) {
-    try {
-      const run = await startAndExecute(loop.id, "morning");
-      runs.push({ runId: run.id, loopId: loop.id, title: loop.title });
-    } catch (err) {
-      runs.push({
-        loopId: loop.id,
-        title: loop.title,
-        error: err instanceof Error ? err.message : "failed",
-      });
+  try {
+    const session = await withWorkspace();
+    const raw = await req.json().catch(() => ({}));
+    const parsed = MorningBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(zodErrorResponse(parsed.error), { status: 422 });
     }
-  }
+    const snapshot = await getSnapshot(session.workspaceId);
+    const targets = rankLoopsForMorning(snapshot, parsed.data.limit);
 
-  return NextResponse.json({
-    message: `Close My Morning queued ${runs.length} Motion run(s)`,
-    runs,
-  });
+    if (targets.length === 0) {
+      return jsonOk({ message: "No open loops to close", runs: [] });
+    }
+
+    const runs = [];
+    for (const loop of targets) {
+      const result = await startAndExecute(session.workspaceId, loop.id, "morning");
+      if (!result.ok) {
+        runs.push({ loopId: loop.id, title: loop.title, error: result.error });
+      } else if (!result.created) {
+        runs.push({
+          runId: result.run.id,
+          loopId: loop.id,
+          title: loop.title,
+          existing: true,
+          conflict: result.conflict,
+        });
+      } else {
+        runs.push({ runId: result.run.id, loopId: loop.id, title: loop.title });
+      }
+    }
+
+    return jsonOk({
+      message: `Close My Morning queued ${runs.length} Motion run(s)`,
+      runs,
+      _mode: modePayload(),
+    });
+  } catch (err) {
+    return handleApiError(err);
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useEffectEvent } from "react";
 import type {
   DebtMetrics,
   GraphSnapshot,
@@ -28,12 +28,16 @@ export function useSnapshot(pollMs = 0) {
     }
   }, []);
 
-  useEffect(() => {
+  const onTick = useEffectEvent(() => {
     void refresh();
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => onTick());
     if (!pollMs) return;
-    const t = setInterval(() => void refresh(), pollMs);
+    const t = setInterval(() => onTick(), pollMs);
     return () => clearInterval(t);
-  }, [refresh, pollMs]);
+  }, [pollMs]);
 
   return { data, loading, error, refresh };
 }
@@ -47,11 +51,15 @@ export function useMetrics(pollMs = 2000) {
     setMetrics((await res.json()) as DebtMetrics);
   }, []);
 
-  useEffect(() => {
+  const onTick = useEffectEvent(() => {
     void refresh();
-    const t = setInterval(() => void refresh(), pollMs);
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => onTick());
+    const t = setInterval(() => onTick(), pollMs);
     return () => clearInterval(t);
-  }, [refresh, pollMs]);
+  }, [pollMs]);
 
   return { metrics, refresh };
 }
@@ -70,11 +78,15 @@ export function useWatchdogs(pollMs = 4000) {
     setHits(json.hits ?? []);
   }, []);
 
-  useEffect(() => {
+  const onTick = useEffectEvent(() => {
     void refresh();
-    const t = setInterval(() => void refresh(), pollMs);
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => onTick());
+    const t = setInterval(() => onTick(), pollMs);
     return () => clearInterval(t);
-  }, [refresh, pollMs]);
+  }, [pollMs]);
 
   return { watchdogs, hits, refresh, setWatchdogs };
 }
@@ -91,7 +103,7 @@ export function useRun(runId: string | null, pollMs = 800) {
       const json = (await res.json()) as MotionRun;
       if (!cancelled) setRun(json);
     };
-    void tick();
+    queueMicrotask(() => void tick());
     const t = setInterval(() => void tick(), pollMs);
     return () => {
       cancelled = true;
@@ -102,12 +114,26 @@ export function useRun(runId: string | null, pollMs = 800) {
   return run;
 }
 
-export async function startRun(loopId: string, trigger: "manual" | "morning" | "watchdog" = "manual") {
+export async function startRun(
+  loopId: string,
+  trigger: "manual" | "morning" | "watchdog" = "manual",
+) {
+  const idempotencyKey =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `idem_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const res = await fetch("/api/runs", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
     body: JSON.stringify({ loopId, trigger }),
   });
+  if (res.status === 409) {
+    const body = await res.json();
+    return body as MotionRun;
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error ?? "Failed to start run");
@@ -179,7 +205,10 @@ export async function createMemory(payload: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Create failed");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? "Create failed");
+  }
   return res.json();
 }
 

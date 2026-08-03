@@ -7,10 +7,6 @@ import { resetMemory } from "@/lib/hooks";
 function SettingsInner() {
   const [resetting, setResetting] = useState(false);
   const [done, setDone] = useState(false);
-  const [rocketUri, setRocketUri] = useState("https://api.rocketride.ai");
-  const [falkorHost, setFalkorHost] = useState("localhost:6379");
-  const [linkupKey, setLinkupKey] = useState("");
-  const [saved, setSaved] = useState(false);
 
   async function onReset() {
     setResetting(true);
@@ -23,72 +19,42 @@ function SettingsInner() {
     }
   }
 
-  function onSaveIntegrations(e: React.FormEvent) {
-    e.preventDefault();
-    localStorage.setItem(
-      "continuum.integrations",
-      JSON.stringify({ rocketUri, falkorHost, linkupKey: linkupKey ? "***set***" : "" }),
-    );
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
   return (
     <div className="space-y-6">
       <div>
         <p className="mono text-[10px] uppercase tracking-[0.2em] text-muted">Settings</p>
-        <h1 className="display mt-1 text-3xl md:text-4xl">Runtime & integrations</h1>
+        <h1 className="display mt-1 text-3xl md:text-4xl">Runtime & mode</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
-          Continuum ships with a local memory store and Motion runtime so the demo always
-          works. Point these at sponsor stacks when you have credentials.
+          Continuum defaults to <strong className="text-ink">DEMO mode</strong> with a
+          workspace-scoped SQLite store and simulated Motion steps. Connected sponsor
+          integrations are not active unless you set credentials and{" "}
+          <code className="mono text-accent">CONTINUUM_MODE=connected</code>.
         </p>
       </div>
 
-      <form onSubmit={onSaveIntegrations} className="panel max-w-2xl space-y-4 p-5">
-        <h2 className="display text-xl">Sponsor connectors</h2>
-        <label className="block space-y-1.5">
-          <span className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
-            RocketRide URI
-          </span>
-          <input className="field" value={rocketUri} onChange={(e) => setRocketUri(e.target.value)} />
-        </label>
-        <label className="block space-y-1.5">
-          <span className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
-            FalkorDB host
-          </span>
-          <input
-            className="field"
-            value={falkorHost}
-            onChange={(e) => setFalkorHost(e.target.value)}
-          />
-        </label>
-        <label className="block space-y-1.5">
-          <span className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
-            Linkup API key
-          </span>
-          <input
-            className="field"
-            type="password"
-            placeholder="Optional — demo uses synthetic research"
-            value={linkupKey}
-            onChange={(e) => setLinkupKey(e.target.value)}
-          />
-        </label>
-        <button className="btn btn-primary" type="submit">
-          {saved ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" /> Saved locally
-            </>
-          ) : (
-            "Save preferences"
-          )}
-        </button>
-      </form>
+      <div className="panel max-w-2xl space-y-3 border border-amber-800/40 p-5">
+        <h2 className="display text-xl">Mode: DEMO</h2>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
+          <li>Research / Linkup steps use labeled synthetic findings — not live web.</li>
+          <li>Notify step is in-app only — no email/Slack delivery receipts.</li>
+          <li>API responses include <code className="mono text-accent">_meta.mode=demo</code>.</li>
+          <li>
+            Persistence: SQLite WAL under <code className="mono text-accent">data/continuum.sqlite</code>{" "}
+            with per-session workspace isolation.
+          </li>
+        </ul>
+        <p className="text-sm text-muted">
+          Connector preference forms were removed because saving a URI/API key locally did not
+          enable a real connection. Wire credentials via environment variables when you implement
+          connected mode.
+        </p>
+      </div>
 
       <div className="panel max-w-2xl space-y-3 p-5">
         <h2 className="display text-xl">Demo controls</h2>
         <p className="text-sm text-muted">
-          Reset restores the Northstar / Acme seed graph and clears prior motion runs.
+          Reset restores the Northstar / Acme seed graph for <em>this workspace</em> and clears
+          prior motion runs and jobs.
         </p>
         <button className="btn btn-ghost" onClick={() => void onReset()} disabled={resetting}>
           {resetting ? (
@@ -100,7 +66,7 @@ function SettingsInner() {
         </button>
         {done && (
           <p className="flex items-center gap-2 text-sm text-success">
-            <CheckCircle2 className="h-4 w-4" /> Seed restored.
+            <CheckCircle2 className="h-4 w-4" /> Seed restored for this workspace.
           </p>
         )}
       </div>
@@ -108,17 +74,18 @@ function SettingsInner() {
       <div className="panel max-w-2xl space-y-2 p-5 text-sm text-muted">
         <h2 className="display text-xl text-ink">Architecture snapshot</h2>
         <p>
-          <strong className="text-ink">Memory:</strong> property graph (nodes/edges/loops) with
-          Cypher-flavored create helpers for FalkorDB parity.
+          <strong className="text-ink">Memory:</strong> SQLite-backed property graph with
+          transactional writes and workspace isolation (FalkorDB-ready shape).
         </p>
         <p>
           <strong className="text-ink">Motion:</strong>{" "}
-          <code className="mono text-accent">pipelines/close-open-loop.json</code> executed by
-          the Continuum runtime (RocketRide-compatible shape).
+          <code className="mono text-accent">pipelines/close-open-loop.json</code> executed via
+          durable job rows + lease recovery (not fire-and-forget alone).
         </p>
         <p>
-          <strong className="text-ink">Stream:</strong> SSE endpoint at{" "}
-          <code className="mono text-accent">/api/events</code> for live run telemetry.
+          <strong className="text-ink">Stream:</strong> SSE at{" "}
+          <code className="mono text-accent">/api/events</code> is best-effort; UI also polls{" "}
+          <code className="mono text-accent">/api/runs</code>.
         </p>
       </div>
     </div>
