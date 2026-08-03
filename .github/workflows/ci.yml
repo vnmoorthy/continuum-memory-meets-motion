@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main, fix/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+        env:
+          CONTINUUM_MODE: demo
+          CONTINUUM_FAST: "1"
+          CONTINUUM_AUTO_WORKER: "0"
+      - run: npm run build
+      - run: npm audit --omit=dev
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CONTINUUM_MODE: demo
+          CONTINUUM_FAST: "1"
+          CONTINUUM_SESSION_SECRET: ci-continuum-session-secret-key
+          CONTINUUM_COOKIE_SECURE: "0"
