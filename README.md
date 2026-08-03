@@ -15,6 +15,7 @@
 [Live Product](https://continuum-memory-meets-motion.vercel.app) ·
 [Architecture](./docs/ARCHITECTURE.md) ·
 [3‑min Pitch](./docs/PRESENTATION.md) ·
+[Demo Video Script](./docs/DEMO_VIDEO.md) ·
 [Deck (PPTX)](./slides/Continuum-Memory-Meets-Motion.pptx) ·
 [Contributing](./CONTRIBUTING.md)
 
@@ -190,6 +191,7 @@ Env reference: [`.env.example`](./.env.example)
 | --- | --- |
 | 10‑slide deck | [`slides/Continuum-Memory-Meets-Motion.pptx`](./slides/Continuum-Memory-Meets-Motion.pptx) |
 | 3‑min spoken storyboard | [`docs/PRESENTATION.md`](./docs/PRESENTATION.md) |
+| 3‑min **demo video** shot list | [`docs/DEMO_VIDEO.md`](./docs/DEMO_VIDEO.md) |
 | Architecture | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
 | Audit before/after | [`docs/AUDIT_BEFORE_AFTER.md`](./docs/AUDIT_BEFORE_AFTER.md) |
 
