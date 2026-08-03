@@ -21,7 +21,7 @@ Local demo: **http://localhost:3000**
 ## Script
 
 ### 0:00 — Hook
-“This is **Continuum** — the **Open Loop OS**. Memory that doesn’t just recall… it **burns unfinished work**.”
+“This is **Continuum** — the **Open Loop OS**. Memory that doesn’t just recall — it **closes unfinished work**.”
 
 ### 0:20 — Problem
 “Every team accrues **Open Loop Debt**: meetings, promises, renewals. Chatbots summarize it. Agents sometimes act. Almost nothing **measures** that debt or **closes** it with durable memory.”
