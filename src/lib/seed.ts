@@ -1,5 +1,30 @@
 import { defaultWatchdogs } from "./watchdogs";
-import type { GraphSnapshot, MemoryEdge, MemoryNode, MotionRun, OpenLoop } from "./types";
+import type {
+  GraphSnapshot,
+  MemoryEdge,
+  MemoryNode,
+  MotionRun,
+  OpenLoop,
+  RiskEntity,
+} from "./types";
+
+/** Canonical risk entities — Acme ARR counted once, not per related loop. */
+export function seedRiskEntities(): RiskEntity[] {
+  return [
+    {
+      id: "risk:acme-renewal",
+      label: "Acme Health Renewal ARR",
+      dollars: 220_000,
+      sourceNodeId: "project-acme-renewal",
+    },
+    {
+      id: "risk:continuum-pilot",
+      label: "Continuum Pilot budget",
+      dollars: 48_000,
+      sourceNodeId: "project-continuum-pilot",
+    },
+  ];
+}
 
 const now = Date.now();
 const ago = (h: number) => new Date(now - h * 3600_000).toISOString();
@@ -130,10 +155,10 @@ const loops: OpenLoop[] = [
       "Draft one-page executive brief",
       "Propose 3 next actions with owners",
     ],
+    riskEntityId: "risk:acme-renewal",
     metadata: {
       audience: "Maya Chen",
       format: "one-pager",
-      dollarsAtRisk: 220000,
       hoursEstimate: 6,
     },
     createdAt: ago(70),
@@ -161,7 +186,8 @@ const loops: OpenLoop[] = [
       "Compare against graph-first decision",
       "Write annotated research note",
     ],
-    metadata: { owner: "Jordan Blake", dollarsAtRisk: 48000, hoursEstimate: 4 },
+    riskEntityId: "risk:continuum-pilot",
+    metadata: { owner: "Jordan Blake", hoursEstimate: 4 },
     createdAt: ago(30),
     updatedAt: ago(8),
   },
@@ -185,7 +211,8 @@ const loops: OpenLoop[] = [
       "Highlight architecture decision",
       "Draft Slack-ready update",
     ],
-    metadata: { channel: "slack", dollarsAtRisk: 48000, hoursEstimate: 2 },
+    riskEntityId: "risk:continuum-pilot",
+    metadata: { channel: "slack", hoursEstimate: 2 },
     createdAt: ago(20),
     updatedAt: ago(6),
   },
@@ -208,9 +235,9 @@ const loops: OpenLoop[] = [
       "Assign owners from memory graph",
       "Produce checklist artifact",
     ],
+    riskEntityId: "risk:acme-renewal",
     metadata: {
       blocker: "missing playbook owners",
-      dollarsAtRisk: 220000,
       hoursEstimate: 5,
     },
     createdAt: ago(68),
@@ -243,6 +270,7 @@ export function createSeedSnapshot(): GraphSnapshot {
     loops,
     runs: [] as MotionRun[],
     watchdogs: defaultWatchdogs(),
+    riskEntities: seedRiskEntities(),
     debtBaseline: 0,
     dollarsFreedLifetime: 0,
     updatedAt: new Date().toISOString(),

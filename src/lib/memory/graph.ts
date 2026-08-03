@@ -1,8 +1,8 @@
 import { getSnapshot } from "../store/db";
 import type { MemoryNode, OpenLoop, SearchHit } from "../types";
 
-export async function getMemorySubgraph(seedIds: string[], depth = 1) {
-  const db = await getSnapshot();
+export async function getMemorySubgraph(workspaceId: string, seedIds: string[], depth = 1) {
+  const db = await getSnapshot(workspaceId);
   const include = new Set(seedIds);
   for (let d = 0; d < depth; d++) {
     const frontier = [...include];
@@ -18,8 +18,12 @@ export async function getMemorySubgraph(seedIds: string[], depth = 1) {
   return { nodes, edges };
 }
 
-export async function searchMemory(query: string, limit = 8): Promise<SearchHit[]> {
-  const db = await getSnapshot();
+export async function searchMemory(
+  workspaceId: string,
+  query: string,
+  limit = 8,
+): Promise<SearchHit[]> {
+  const db = await getSnapshot(workspaceId);
   const q = query.toLowerCase().trim();
   if (!q) return [];
 

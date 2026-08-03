@@ -1,7 +1,13 @@
 import { nanoid } from "nanoid";
 import { computeDebtMetrics, dollarsForLoop } from "../debt";
-import { formatContextPack, getMemorySubgraph } from "../memory/graph";
+import { getMemorySubgraph } from "../memory/graph";
+import { demoPrefix, getContinuumMode, isDemoMode } from "../mode";
 import {
+  ConflictError,
+  enqueueJob,
+  getActiveRunForLoop,
+  getRun,
+  getRunByIdempotencyKey,
   getSnapshot,
   recordDebtFreed,
   saveRun,
@@ -30,7 +36,7 @@ function pushEvent(run: MotionRun, level: StreamEvent["level"], message: string)
     runId: run.id,
     ts: new Date().toISOString(),
     level,
-    message,
+    message: demoPrefix(message),
   });
 }
 
@@ -53,13 +59,14 @@ function toCitations(nodes: MemoryNode[]): Citation[] {
 }
 
 function citationsBlock(citations: Citation[]) {
+  const groundedNote = isDemoMode()
+    ? "_Cited Motion (DEMO): citations reference Continuum memory nodes only. External research below is simulated — not live web grounding._"
+    : "_Cited Motion: every claim above is grounded in Continuum memory nodes._";
   return [
     "## Citations",
-    ...citations.map(
-      (c) => `- [${c.kind}] **${c.title}** (\`${c.nodeId}\`)`,
-    ),
+    ...citations.map((c) => `- [${c.kind}] **${c.title}** (\`${c.nodeId}\`)`),
     "",
-    "_Cited Motion: every claim above is grounded in Continuum memory nodes._",
+    groundedNote,
   ].join("\n");
 }
 
@@ -70,21 +77,22 @@ function withCitations(body: string, citations: Citation[]): string {
 async function webResearchStub(topic: string) {
   const findings = [
     {
-      source: "Vertex AI Latency Benchmarks 2026",
+      source: "[DEMO SIMULATED] Vertex AI Latency Benchmarks 2026",
       claim:
-        "Graph-augmented retrieval cut p95 latency 18–27% vs flat vector RAG on multi-hop queries.",
+        "Graph-augmented retrieval cut p95 latency 18–27% vs flat vector RAG on multi-hop queries. (Simulated — not fetched live.)",
     },
     {
-      source: "Gartner Emerging Tech: Stateful Agents",
-      claim: "Teams with durable memory graphs close 2.4× more operational loops per week.",
+      source: "[DEMO SIMULATED] Gartner Emerging Tech: Stateful Agents",
+      claim:
+        "Teams with durable memory graphs close 2.4× more operational loops per week. (Simulated — not fetched live.)",
     },
     {
-      source: "Acme Health Peer Review (synthetic)",
+      source: "[DEMO SIMULATED] Acme Health Peer Review",
       claim:
-        "Enterprise healthcare renewals fail most often on onboarding completeness, not feature gaps.",
+        "Enterprise healthcare renewals fail most often on onboarding completeness, not feature gaps. (Simulated.)",
     },
   ];
-  return { topic, findings };
+  return { topic, findings, simulated: true as const };
 }
 
 function buildBrief(
@@ -98,9 +106,9 @@ function buildBrief(
   };
 
   const body = `# Acme Health Renewal Risk Brief
-Prepared for: Maya Chen · Continuum Cited Motion
+Prepared for: Maya Chen · Continuum Cited Motion${isDemoMode() ? " · DEMO" : ""}
 Loop: ${loop.title}
-Dollars at risk: **$220k ARR** (Acme Health Renewal)
+Dollars at risk: **$220k ARR** (risk entity \`risk:acme-renewal\` — counted once in portfolio)
 
 ## Situation
 ${loop.summary}
@@ -121,10 +129,10 @@ Maya (${cite("person-maya")}) needs a Friday-ready brief. Sam (${cite("person-sa
 ${
   research
     ? research.findings.map((f) => `- ${f.source}: ${f.claim}`).join("\n")
-    : "- No live research attached."
+    : "- No research attached."
 }
 
-— Continuum Motion · RocketRide pipeline \`close-open-loop\``;
+— Continuum Motion · RocketRide-compatible pipeline \`close-open-loop\`${isDemoMode() ? " · DEMO simulation" : ""}`;
 
   return {
     id: nanoid(10),
@@ -141,7 +149,7 @@ function buildResearchNote(
   citations: Citation[],
   research: Awaited<ReturnType<typeof webResearchStub>>,
 ): Artifact {
-  const body = `# Competitor & Latency Scan
+  const body = `# Competitor & Latency Scan${isDemoMode() ? " (DEMO — simulated sources)" : ""}
 For: ${loop.title}
 
 ## Query
@@ -193,16 +201,14 @@ Grounded in ${citations.map((c) => `[[${c.title}|${c.nodeId}]]`).join(", ")}.
 }
 
 function buildStatusUpdate(loop: OpenLoop, citations: Citation[]): Artifact {
-  const body = `# Continuum Pilot · Weekly
+  const body = `# Continuum Pilot · Weekly${isDemoMode() ? " (DEMO)" : ""}
 Hi Maya —
 
 Memory coverage is healthy: people, projects, decisions, and open loops are linked in the graph.
 Motion is burning down Open Loop Debt around Acme renewal and the Retrieval RFC.
-Architecture bet remains graph-first memory with RocketRide execution.
+Architecture bet remains graph-first memory with RocketRide-compatible execution.
 
 Cited context: ${citations.map((c) => `[[${c.title}|${c.nodeId}]]`).join("; ")}.
-
-Demo-ready for Memory Meets Motion.
 
 — Continuum`;
 
@@ -225,7 +231,7 @@ function pickArtifact(
     return buildBrief(loop, citations, research);
   }
   if (loop.id.includes("rfc") || loop.title.toLowerCase().includes("competitor")) {
-    return buildResearchNote(loop, citations, research ?? { topic: loop.title, findings: [] });
+    return buildResearchNote(loop, citations, research ?? { topic: loop.title, findings: [], simulated: true });
   }
   if (loop.id.includes("onboarding") || loop.title.toLowerCase().includes("playbook")) {
     return buildChecklist(loop, citations);
@@ -233,14 +239,36 @@ function pickArtifact(
   return buildStatusUpdate(loop, citations);
 }
 
-export async function createQueuedRun(loopId: string, trigger: RunTrigger = "manual") {
-  const db = await getSnapshot();
+export type CreateRunResult =
+  | { ok: true; run: MotionRun; created: true }
+  | { ok: true; run: MotionRun; created: false; conflict: "active" | "idempotent" }
+  | { ok: false; error: string; status: number };
+
+export async function createQueuedRun(
+  workspaceId: string,
+  loopId: string,
+  trigger: RunTrigger = "manual",
+  idempotencyKey?: string | null,
+): Promise<CreateRunResult> {
+  if (idempotencyKey) {
+    const prior = await getRunByIdempotencyKey(workspaceId, idempotencyKey);
+    if (prior) {
+      return { ok: true, run: prior, created: false, conflict: "idempotent" };
+    }
+  }
+
+  const active = await getActiveRunForLoop(workspaceId, loopId);
+  if (active) {
+    return { ok: true, run: active, created: false, conflict: "active" };
+  }
+
+  const db = await getSnapshot(workspaceId);
   const loop = db.loops.find((l) => l.id === loopId);
-  if (!loop) throw new Error("Open loop not found");
-  if (loop.status === "running") throw new Error("Loop already running");
-  if (loop.status === "closed") throw new Error("Loop already closed");
+  if (!loop) return { ok: false, error: "Open loop not found", status: 404 };
+  if (loop.status === "closed") return { ok: false, error: "Loop already closed", status: 400 };
 
   const before = computeDebtMetrics(db);
+  const mode = getContinuumMode();
 
   const steps: MotionStep[] = [
     {
@@ -248,7 +276,7 @@ export async function createQueuedRun(loopId: string, trigger: RunTrigger = "man
       name: "Retrieve memory subgraph",
       kind: "retrieve",
       status: "pending",
-      detail: "Pull FalkorDB-style neighborhood around the loop",
+      detail: "Pull memory neighborhood around the loop",
     },
     {
       id: "reason",
@@ -259,10 +287,13 @@ export async function createQueuedRun(loopId: string, trigger: RunTrigger = "man
     },
     {
       id: "tool",
-      name: "Gather live context",
+      name: mode === "demo" ? "Simulate live context (DEMO)" : "Gather live context",
       kind: "tool",
       status: "pending",
-      detail: "Linkup-style web/research enrichment when needed",
+      detail:
+        mode === "demo"
+          ? "DEMO: synthetic research only — not Linkup/live web"
+          : "Linkup-style web/research enrichment when configured",
     },
     {
       id: "write",
@@ -280,10 +311,13 @@ export async function createQueuedRun(loopId: string, trigger: RunTrigger = "man
     },
     {
       id: "notify",
-      name: "Notify stakeholders",
+      name: mode === "demo" ? "In-app notify (DEMO — no outbound)" : "Notify stakeholders",
       kind: "notify",
       status: "pending",
-      detail: "Surface completion + debt delta",
+      detail:
+        mode === "demo"
+          ? "DEMO: in-app completion signal only — no email/Slack delivery"
+          : "Surface completion + debt delta",
     },
   ];
 
@@ -301,37 +335,72 @@ export async function createQueuedRun(loopId: string, trigger: RunTrigger = "man
     debtBefore: before.score,
     trigger,
     startedAt: new Date().toISOString(),
+    idempotencyKey: idempotencyKey ?? undefined,
+    workspaceId,
+    simulated: mode === "demo",
+    mode,
   };
 
   pushEvent(
     run,
     "info",
-    `Run queued (${trigger}). Open Loop Debt before: ${before.score}. Pipeline: RocketRide-compatible close-open-loop.`,
+    `Run queued (${trigger}). Open Loop Debt before: ${before.score}. Pipeline: close-open-loop. Mode: ${mode}.`,
   );
-  await saveRun(run);
-  await updateLoop(loop.id, { status: "running" });
-  return run;
+
+  try {
+    await saveRun(workspaceId, run, { idempotencyKey });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      return {
+        ok: true,
+        run: err.existingRun,
+        created: false,
+        conflict: err.message.includes("Idempotent") ? "idempotent" : "active",
+      };
+    }
+    throw err;
+  }
+
+  // Verify readable before returning success
+  const readable = await getRun(workspaceId, run.id);
+  if (!readable) {
+    return { ok: false, error: "Run persisted but not readable", status: 500 };
+  }
+
+  await updateLoop(workspaceId, loop.id, { status: "running" });
+  await enqueueJob(workspaceId, run.id);
+  // Dynamic import avoids circular dependency with the job worker.
+  const { scheduleJobKick } = await import("../jobs/worker");
+  scheduleJobKick();
+  return { ok: true, run: readable, created: true };
 }
 
-export async function executeRun(runId: string, onProgress?: ProgressFn) {
-  const db = await getSnapshot();
-  const run = db.runs.find((r) => r.id === runId);
+export async function executeRun(
+  workspaceId: string,
+  runId: string,
+  onProgress?: ProgressFn,
+) {
+  const run = await getRun(workspaceId, runId);
   if (!run) throw new Error("Run not found");
+  if (run.status === "succeeded" || run.status === "failed" || run.status === "cancelled") {
+    return run;
+  }
+  const db = await getSnapshot(workspaceId);
   const loop = db.loops.find((l) => l.id === run.loopId);
   if (!loop) throw new Error("Loop not found");
 
-  const dollars = dollarsForLoop(loop, db.nodes);
+  const dollars = dollarsForLoop(loop, db.nodes, db);
   run.status = "running";
   pushEvent(run, "info", "Motion started. Bridging long-term memory → autonomous execution.");
-  await saveRun(run);
+  await saveRun(workspaceId, run);
   await onProgress?.(run);
 
   try {
     markStep(run, "retrieve", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(650);
-    const subgraph = await getMemorySubgraph([loop.id, ...loop.contextNodeIds], 1);
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 650);
+    const subgraph = await getMemorySubgraph(workspaceId, [loop.id, ...loop.contextNodeIds], 1);
     const citations = toCitations(subgraph.nodes);
     run.memoryUsed = subgraph.nodes.map((n) => n.id);
     run.citations = citations;
@@ -342,13 +411,13 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       `Loaded ${subgraph.nodes.length} nodes / ${subgraph.edges.length} edges. Citations ready.`,
     );
     pushEvent(run, "success", `Memory subgraph ready (${citations.length} citable entities).`);
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
 
     markStep(run, "reason", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(700);
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 700);
     markStep(
       run,
       "reason",
@@ -356,13 +425,13 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       `Priority P${loop.priority}. $${Math.round(dollars / 1000)}k linked risk ranked against durable context.`,
     );
     pushEvent(run, "info", "Agent reasoned over owners, blockers, dollars at risk, and due pressure.");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
 
     markStep(run, "tool", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(750);
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 750);
     const needsResearch =
       loop.tags.includes("research") ||
       loop.title.toLowerCase().includes("brief") ||
@@ -375,21 +444,27 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       "tool",
       "done",
       needsResearch
-        ? `Live context pack assembled (${research?.findings.length ?? 0} sources).`
-        : "Skipped live web — memory citations sufficient.",
+        ? isDemoMode()
+          ? `DEMO simulated research pack (${research?.findings.length ?? 0} synthetic sources). Not live.`
+          : `Live context pack assembled (${research?.findings.length ?? 0} sources).`
+        : "Skipped external research — memory citations sufficient.",
     );
     pushEvent(
       run,
       "info",
-      needsResearch ? "Linkup-style research enrichment attached." : "No external research required.",
+      needsResearch
+        ? isDemoMode()
+          ? "DEMO: synthetic research attached — not Linkup/live web."
+          : "Research enrichment attached."
+        : "No external research required.",
     );
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
 
     markStep(run, "write", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(900);
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 900);
     const artifact = pickArtifact(loop, citations, research);
     run.artifacts.push(artifact);
     markStep(
@@ -399,25 +474,30 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       `Created ${artifact.kind}: ${artifact.title} with ${artifact.citations.length} citations.`,
     );
     pushEvent(run, "success", `Cited artifact ready · ${artifact.title}`);
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
 
     markStep(run, "persist", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(600);
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 600);
     const artifactNode = {
       id: `artifact-${artifact.id}`,
       kind: "artifact" as const,
       title: artifact.title,
       summary: artifact.content.slice(0, 180).replace(/\n/g, " "),
-      tags: ["generated", artifact.kind, "motion", "cited"],
-      metadata: { runId: run.id, artifactKind: artifact.kind, citations: artifact.citations.length },
+      tags: ["generated", artifact.kind, "motion", "cited", ...(isDemoMode() ? ["demo"] : [])],
+      metadata: {
+        runId: run.id,
+        artifactKind: artifact.kind,
+        citations: artifact.citations.length,
+        simulated: isDemoMode(),
+      },
       createdAt: artifact.createdAt,
       updatedAt: artifact.createdAt,
     };
-    await upsertNode(artifactNode);
-    await upsertEdge({
+    await upsertNode(workspaceId, artifactNode);
+    await upsertEdge(workspaceId, {
       id: `edge-${nanoid(8)}`,
       source: loop.id,
       target: artifactNode.id,
@@ -425,7 +505,7 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       weight: 1,
       createdAt: new Date().toISOString(),
     });
-    await upsertEdge({
+    await upsertEdge(workspaceId, {
       id: `edge-${nanoid(8)}`,
       source: artifactNode.id,
       target: loop.id,
@@ -433,48 +513,64 @@ export async function executeRun(runId: string, onProgress?: ProgressFn) {
       weight: 1,
       createdAt: new Date().toISOString(),
     });
-    await updateLoop(loop.id, { status: "closed" });
-    await recordDebtFreed(dollars);
+    await updateLoop(workspaceId, loop.id, { status: "closed" });
+    await recordDebtFreed(workspaceId, dollars);
 
-    const afterSnap = await getSnapshot();
-    const after = computeDebtMetrics(afterSnap);
-    run.debtAfter = after.score;
+    const afterSnap = await getSnapshot(workspaceId);
+    const afterMetrics = computeDebtMetrics(afterSnap);
+    run.debtAfter = afterMetrics.score;
     run.dollarsFreed = dollars;
     markStep(
       run,
       "persist",
       "done",
-      `Write-back complete. Debt ${run.debtBefore ?? "?"} → ${after.score}. Freed ~$${Math.round(dollars / 1000)}k risk attribution.`,
+      `Write-back complete. Debt ${run.debtBefore ?? "?"} → ${afterMetrics.score}. Freed ~$${Math.round(dollars / 1000)}k risk attribution.`,
     );
     pushEvent(run, "success", "Memory updated. Loop closed. Open Loop Debt reduced.");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
 
     markStep(run, "notify", "running");
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
-    await sleep(450);
-    markStep(run, "notify", "done", "Stakeholders notified via in-app completion signal.");
-    pushEvent(run, "success", "Motion complete. Memory meets motion.");
+    await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 450);
+    markStep(
+      run,
+      "notify",
+      "done",
+      isDemoMode()
+        ? "DEMO: in-app completion signal only — no outbound email/Slack delivery receipt."
+        : "Stakeholders notified.",
+    );
+    pushEvent(
+      run,
+      "success",
+      isDemoMode()
+        ? "Motion complete (DEMO). No outbound notifications were sent."
+        : "Motion complete. Memory meets motion.",
+    );
     run.status = "succeeded";
     run.finishedAt = new Date().toISOString();
     run.summary = `Closed “${loop.title}” · debt ${run.debtBefore}→${run.debtAfter} · ${artifact.title}`;
-    await saveRun(run);
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
     return run;
   } catch (err) {
     run.status = "failed";
     run.finishedAt = new Date().toISOString();
     pushEvent(run, "error", err instanceof Error ? err.message : "Unknown failure");
-    await updateLoop(loop.id, { status: "blocked" });
-    await saveRun(run);
+    await updateLoop(workspaceId, loop.id, { status: "blocked" });
+    await saveRun(workspaceId, run);
     await onProgress?.(run);
     throw err;
   }
 }
 
-export async function startAndExecute(loopId: string, trigger: RunTrigger = "manual") {
-  const run = await createQueuedRun(loopId, trigger);
-  void executeRun(run.id).catch((err) => console.error("Run failed", err));
-  return run;
+export async function startAndExecute(
+  workspaceId: string,
+  loopId: string,
+  trigger: RunTrigger = "manual",
+  idempotencyKey?: string | null,
+) {
+  return createQueuedRun(workspaceId, loopId, trigger, idempotencyKey);
 }

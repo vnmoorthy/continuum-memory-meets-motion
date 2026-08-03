@@ -4,6 +4,7 @@ import type {
   GraphSnapshot,
   MemoryNode,
   OpenLoop,
+  RiskEntity,
 } from "./types";
 
 function parseDollars(value: unknown): number {
@@ -13,8 +14,23 @@ function parseDollars(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Dollars at risk attributed to a loop via its own metadata or linked projects. */
-export function dollarsForLoop(loop: OpenLoop, nodes: MemoryNode[]): number {
+function riskMap(snapshot: GraphSnapshot): Map<string, RiskEntity> {
+  const map = new Map<string, RiskEntity>();
+  for (const r of snapshot.riskEntities ?? []) map.set(r.id, r);
+  return map;
+}
+
+/**
+ * Dollars attributed to a loop for *display on that loop*.
+ * Shared risk entities (e.g. Acme $220k) resolve to the same entity id —
+ * portfolio totals must use uniqueRiskDollars, not sum(dollarsForLoop).
+ */
+export function dollarsForLoop(loop: OpenLoop, nodes: MemoryNode[], snapshot?: GraphSnapshot): number {
+  if (snapshot && loop.riskEntityId) {
+    const entity = riskMap(snapshot).get(loop.riskEntityId);
+    if (entity) return entity.dollars;
+  }
+
   const own = parseDollars(loop.metadata.arr ?? loop.metadata.dollarsAtRisk ?? loop.metadata.value);
   if (own > 0) return own;
 
@@ -27,7 +43,6 @@ export function dollarsForLoop(loop: OpenLoop, nodes: MemoryNode[]): number {
       parseDollars(node.metadata.arr ?? node.metadata.dollarsAtRisk ?? node.metadata.value),
     );
   }
-  // Soft defaults by tag so demos always show impact
   if (linked > 0) return linked;
   if (loop.tags.includes("customer") || loop.tags.includes("revenue")) return 220_000;
   if (loop.tags.includes("engineering") || loop.tags.includes("research")) return 48_000;
@@ -35,25 +50,35 @@ export function dollarsForLoop(loop: OpenLoop, nodes: MemoryNode[]): number {
   return 12_000;
 }
 
+/** Risk entity id used for unique portfolio accounting. */
+export function riskKeyForLoop(loop: OpenLoop, snapshot: GraphSnapshot): string {
+  if (loop.riskEntityId) return loop.riskEntityId;
+  const projectId =
+    loop.contextNodeIds.find((id) => snapshot.nodes.find((n) => n.id === id)?.kind === "project") ??
+    loop.id;
+  const dollars = dollarsForLoop(loop, snapshot.nodes, snapshot);
+  return `inferred:${projectId}:${dollars}`;
+}
+
 export function ageHours(iso: string, now = Date.now()) {
   return Math.max(0, (now - new Date(iso).getTime()) / 3_600_000);
 }
 
 export function hoursTrappedFor(loop: OpenLoop, ageH: number) {
-  // Higher priority traps more focus hours as it ages
   const base = (6 - loop.priority) * 1.25;
   return Math.round((base + ageH * 0.15) * 10) / 10;
 }
 
-/**
- * Open Loop Debt score:
- * priorityWeight × ageFactor × dollarFactor (normalized)
- */
-export function scoreLoop(loop: OpenLoop, nodes: MemoryNode[], now = Date.now()): DebtLoopBreakdown {
+export function scoreLoop(
+  loop: OpenLoop,
+  nodes: MemoryNode[],
+  now = Date.now(),
+  snapshot?: GraphSnapshot,
+): DebtLoopBreakdown {
   const ageH = ageHours(loop.createdAt, now);
-  const dollars = loop.status === "closed" ? 0 : dollarsForLoop(loop, nodes);
+  const dollars = loop.status === "closed" ? 0 : dollarsForLoop(loop, nodes, snapshot);
   const hours = loop.status === "closed" ? 0 : hoursTrappedFor(loop, ageH);
-  const priorityWeight = 6 - loop.priority; // P1=5 … P5=1
+  const priorityWeight = 6 - loop.priority;
   const ageFactor = 1 + Math.min(ageH / 24, 10) * 0.35;
   const dollarFactor = 1 + Math.log10(1 + dollars / 1000);
   const dueBoost =
@@ -76,17 +101,34 @@ export function scoreLoop(loop: OpenLoop, nodes: MemoryNode[], now = Date.now())
   };
 }
 
+/**
+ * Sum unique risk entities among open loops — Acme $220k counted once even if
+ * renewal-brief + onboarding-playbook both reference it.
+ */
+export function uniqueRiskDollars(snapshot: GraphSnapshot): number {
+  const open = snapshot.loops.filter((l) => l.status !== "closed");
+  const seen = new Set<string>();
+  let total = 0;
+  for (const loop of open) {
+    const key = riskKeyForLoop(loop, snapshot);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    total += dollarsForLoop(loop, snapshot.nodes, snapshot);
+  }
+  return total;
+}
+
 export function computeDebtMetrics(snapshot: GraphSnapshot, now = Date.now()): DebtMetrics {
-  const breakdown = snapshot.loops.map((l) => scoreLoop(l, snapshot.nodes, now));
+  const breakdown = snapshot.loops.map((l) => scoreLoop(l, snapshot.nodes, now, snapshot));
   const open = breakdown.filter((b) => b.status !== "closed");
   const closed = breakdown.filter((b) => b.status === "closed");
   const score = open.reduce((s, b) => s + b.score, 0);
-  const dollarsAtRisk = open.reduce((s, b) => s + b.dollarsAtRisk, 0);
-  // Avoid double-counting shared ARR across related loops — take unique project ARR max grouping
   const uniqueDollars = uniqueRiskDollars(snapshot);
   const hoursTrapped = open.reduce((s, b) => s + b.hoursTrapped, 0);
   const avgAgeHours =
-    open.length === 0 ? 0 : Math.round((open.reduce((s, b) => s + b.ageHours, 0) / open.length) * 10) / 10;
+    open.length === 0
+      ? 0
+      : Math.round((open.reduce((s, b) => s + b.ageHours, 0) / open.length) * 10) / 10;
   const agingCritical = open.filter((b) => b.ageHours >= 48 && b.priority <= 2).length;
 
   const beforeScore = snapshot.debtBaseline || score;
@@ -94,7 +136,7 @@ export function computeDebtMetrics(snapshot: GraphSnapshot, now = Date.now()): D
 
   return {
     score,
-    dollarsAtRisk: uniqueDollars > 0 ? uniqueDollars : dollarsAtRisk,
+    dollarsAtRisk: uniqueDollars,
     hoursTrapped: Math.round(hoursTrapped * 10) / 10,
     openLoops: open.length,
     closedLoops: closed.length,
@@ -106,24 +148,6 @@ export function computeDebtMetrics(snapshot: GraphSnapshot, now = Date.now()): D
     breakdown: breakdown.sort((a, b) => b.score - a.score),
     updatedAt: new Date(now).toISOString(),
   };
-}
-
-function uniqueRiskDollars(snapshot: GraphSnapshot) {
-  const open = snapshot.loops.filter((l) => l.status !== "closed");
-  const seen = new Set<string>();
-  let total = 0;
-  for (const loop of open) {
-    const dollars = dollarsForLoop(loop, snapshot.nodes);
-    // Key by primary project context if present
-    const projectId =
-      loop.contextNodeIds.find((id) => snapshot.nodes.find((n) => n.id === id)?.kind === "project") ??
-      loop.id;
-    const key = `${projectId}:${dollars}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    total += dollars;
-  }
-  return total;
 }
 
 export function rankLoopsForMorning(snapshot: GraphSnapshot, limit = 2): OpenLoop[] {

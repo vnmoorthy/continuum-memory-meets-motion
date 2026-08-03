@@ -51,7 +51,7 @@ export function matchesWatchdog(
     case "high_priority":
       return loop.priority <= 2;
     case "revenue_risk":
-      return dollarsForLoop(loop, snapshot.nodes) >= 100_000;
+      return dollarsForLoop(loop, snapshot.nodes, snapshot) >= 100_000;
     default:
       return false;
   }
@@ -97,6 +97,6 @@ function reasonFor(id: WatchdogRuleId, loop: OpenLoop, snapshot: GraphSnapshot, 
   if (id === "due_soon") return `Due ${loop.dueAt ? new Date(loop.dueAt).toLocaleString() : "soon"}`;
   if (id === "high_priority") return `Priority P${loop.priority}`;
   if (id === "revenue_risk")
-    return `$${Math.round(dollarsForLoop(loop, snapshot.nodes) / 1000)}k ARR at risk`;
+    return `$${Math.round(dollarsForLoop(loop, snapshot.nodes, snapshot) / 1000)}k ARR at risk`;
   return "Matched";
 }
