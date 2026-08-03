@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { DM_Sans, IBM_Plex_Mono, Syne } from "next/font/google";
+import { Fraunces, JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
-const syne = Syne({
-  variable: "--font-syne",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const ibmMono = IBM_Plex_Mono({
-  variable: "--font-ibm-mono",
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
   weight: ["400", "500"],
 });
@@ -30,6 +30,12 @@ export const metadata: Metadata = {
     description: "Memory Meets Motion: durable graphs + autonomous loop closure.",
     images: ["/og.png"],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Continuum — Open Loop OS",
+    description: "Memory that moves. Debt you can burn.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({
@@ -40,11 +46,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${syne.variable} ${dmSans.variable} ${ibmMono.variable} h-full`}
+      className={`${fraunces.variable} ${manrope.variable} ${jetbrains.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col antialiased">
+      <body className="relative min-h-full flex flex-col antialiased">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <div className="atmosphere" aria-hidden />
         <div className="noise" aria-hidden />
-        {children}
+        <div className="relative z-10 flex min-h-full flex-1 flex-col">{children}</div>
       </body>
     </html>
   );

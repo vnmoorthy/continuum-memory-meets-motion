@@ -105,11 +105,11 @@ export default function CommandPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mono text-[10px] uppercase tracking-[0.2em] text-muted">Command</p>
-          <h1 className="display mt-1 text-3xl md:text-4xl">Burn Open Loop Debt</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Continuum is the Open Loop OS — durable team memory that measures unfinished work,
-            then runs Cited Motion to close it and write results back.
+          <p className="mono text-[10px] uppercase tracking-[0.28em] text-memory">Command</p>
+          <h1 className="display mt-1 text-4xl leading-[0.95] md:text-5xl">Burn Open Loop Debt</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted md:text-base">
+            Durable team memory that measures unfinished work, then runs Cited Motion to close it
+            and write results back.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
