@@ -30,6 +30,25 @@ Optional env (see `.env.example`):
 | `CONTINUUM_SESSION_SECRET` | dev fallback | HMAC secret for demo session cookie |
 | `CONTINUUM_DB_PATH` | `data/continuum.sqlite` | SQLite file (WAL) |
 | `DATABASE_URL` | unset | Required for multi-instance production (Postgres) — **not implemented in demo profile** |
+| `ROCKETRIDE_APIKEY` | unset | Live RocketRide Cloud pipeline submit |
+| `FALKORDB_HOST` | unset | Mirror memory graph into FalkorDB |
+| `LINKUP_API_KEY` | unset | Live Linkup web research |
+| `LASER_URI` / `LASER_LOCAL` | unset | LaserData/Iggy event streams |
+| `GUILD_API_KEY` | unset | Guild workspace token (local experiment writer always on) |
+| `SNYK_TOKEN` | unset | Authenticated Snyk scans (`npm run snyk:test`) |
+
+### Sponsor SDKs (all installed)
+
+| Sponsor | Package | Where it runs |
+| --- | --- | --- |
+| RocketRide | `rocketride` | Motion tool step submits `pipelines/close-open-loop.json` when keyed |
+| FalkorDB | `falkordb` | Mirrors artifact nodes/edges after write-back |
+| Linkup | `linkup-sdk` | Research enrichment during Motion |
+| LaserData | `@laserdata/laser-sdk` | Motion + watchdog events (`continuum.events` / JSONL fallback) |
+| Guild.ai | `@guildai/cli` + `.guild/continuum-runs` | Experiment records per completed run |
+| Snyk | `snyk` | Settings → Run Snyk scan / `npm run snyk:test` |
+
+Live status: **Settings** or `GET /api/sponsors`. Without keys, each adapter reports `not_configured` and stays DEMO — it does not invent live delivery.
 
 ### Demo path (~90 seconds)
 
