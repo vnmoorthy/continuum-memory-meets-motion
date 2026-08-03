@@ -1,12 +1,32 @@
 # Continuum — 3-minute storyboard (speak this)
 
 Deck: `slides/Continuum-Memory-Meets-Motion.pptx`  
-Live: https://continuum-memory-meets-motion.vercel.app · Local: http://localhost:3000
+Live: https://continuum-memory-meets-motion.vercel.app · Local: http://localhost:3000  
+Video shot list: [`DEMO_VIDEO.md`](./DEMO_VIDEO.md)
 
-Tone: calm founder energy. Not markety. Let the demo do the flex. Pause on the debt number and the citations.
+Tone: calm founder energy. Not markety. Let the demo do the flex. Pause on the debt number, the citations, and the **sponsor SDK panel**.
 
 **Pre-flight (30s before you walk up)**  
-Settings → Reset memory to seed. Leave `/` open in one tab, `/app` ready in another. Zoom browser ~110%.
+Settings → Reset memory to seed. Leave `/` open in one tab, `/app` ready in another. Zoom ~110%.
+
+---
+
+## Sponsor tools — yes, in the product
+
+We **did** put sponsor client SDKs into Continuum (not just slides):
+
+| Sponsor | In product as | You can say |
+| --- | --- | --- |
+| RocketRide | `rocketride` pipeline submit on Motion | “RocketRide-compatible close-open-loop pipeline” |
+| FalkorDB | `falkordb` graph mirror on write-back | “Graph memory — FalkorDB client when hosted” |
+| Linkup | `linkup-sdk` research step | “Linkup for live web context” |
+| LaserData | `@laserdata/laser-sdk` event publish | “LaserData streams for Motion + watchdogs” |
+| Guild.ai | experiment JSON under `.guild/` | “Guild-style run tracking” |
+| Snyk | `snyk` scan from Settings | “Snyk for shipping safely” |
+
+**Honesty line judges respect:**  
+“SDKs are installed and called. Without credentials we stay labeled DEMO — we don’t invent live results.”  
+Proof: `/app/settings` or `GET /api/sponsors` (`sdkLoadedCount: 6`).
 
 ---
 
@@ -17,16 +37,16 @@ Settings → Reset memory to seed. Leave `/` open in one tab, `/app` ready in an
 | 0:00–0:20 | Slide 1 | Hook with the $220k line |
 | 0:20–0:50 | Slides 2–3 | Name Open Loop Debt |
 | 0:50–1:10 | Slide 4–5 | What Continuum is + stakes |
-| 1:10–2:25 | **Laptop `/app`** | Live Close My Morning |
-| 2:25–2:45 | Slides 8–9 | Sponsors + honesty |
-| 2:45–3:00 | Slide 10 | Close + thank you |
+| 1:10–2:15 | **Laptop `/app` → runs** | Live Close My Morning + citations |
+| 2:15–2:40 | **`/app/settings` + slides 8–9** | Name all 6 sponsor SDKs |
+| 2:40–3:00 | Slide 10 | Close + thank you |
 
 ---
 
-## Spoken script (~450 words · ~3:00)
+## Spoken script (~3:00)
 
-### 0:00 — Don’t introduce yourself like a deck
-*(Slide 1 · eye contact, then Continuum)*
+### 0:00 — Hook
+*(Slide 1)*
 
 “Okay — quick question.
 
@@ -37,8 +57,8 @@ In our seed world, that number is **two hundred and twenty thousand dollars**.
 This is **Continuum**. The **Open Loop OS**.  
 Memory that doesn’t just recall… it **finishes**.”
 
-### 0:20 — Make them feel it
-*(Slide 2 → 3)*
+### 0:20 — Problem
+*(Slides 2–3)*
 
 “You already know this feeling.
 
@@ -50,8 +70,8 @@ And then… nothing. The work didn’t fail. It just never closed.
 
 We call that **Open Loop Debt** — unfinished work that compounds quietly until a customer goes quiet or a renewal slips.”
 
-### 0:50 — Product in one breath
-*(Slide 4 → 5 · then switch to laptop)*
+### 0:50 — Product
+*(Slides 4–5 · then laptop)*
 
 “Continuum does three things.
 
@@ -63,44 +83,44 @@ So the debt number actually goes down.
 
 Let me show you.”
 
-### 1:10 — Live demo (this is the wow)
+### 1:10 — Live demo
 *(Laptop `/app` — reset seed first)*
 
 “Here’s Command.
 
-See this? **Open Loop Debt.**  
-And here — **dollars at risk**. Acme Health. Two-twenty sitting in open loops. Maya needs a Friday brief. Sam already flagged the gaps. Continuum already remembers both.
+**Open Loop Debt.**  
+**Dollars at risk** — Acme Health, two-twenty sitting in open loops. Maya needs a Friday brief. Sam already flagged the gaps. Continuum already remembers both.
 
-I’m going to hit **Close My Morning**.”
+**Close My Morning.**”
 
-*(Click. Let it run. Don’t narrate every spinner — breathe.)*
+*(Click. Breathe. Don’t narrate every spinner.)*
 
-“It’s pulling the memory subgraph… ranking the risk… drafting with citations…
+“Pulling the memory subgraph… research step… drafting with citations…
 
-Okay — run view.
+Run view — scroll with me to **Citations**.
 
-Watch the steps land.  
-Now scroll with me to **Citations**.
+Every claim points back to a real memory node — Maya, Sam, the QBR, the renewal. Inspectable. Not vibes.
 
-Every claim here points back to a real memory node — Maya, Sam, the QBR, the renewal. Not vibes. Inspectable.
+Debt **before**… **after**.  
+Loop closed. Brief is in the graph.”
 
-And look — debt **before**… **after**.  
-The loop is closed. The brief is in the graph. Next agent starts smarter.”
+### 2:15 — Sponsors (say we used the tools)
+*(Settings → Sponsor SDKs, and/or slides 8–9)*
 
-*(Optional 8s if ahead: “Settings — every sponsor SDK is wired: RocketRide, FalkorDB, Linkup, Laser, Guild, Snyk. Demo stays honest without keys.”)*
+“And we didn’t just name-drop the hackathon stack — we **wired the client SDKs**.
 
-### 2:25 — Why this theme / why you
-*(Slides 8–9)*
+**RocketRide** for the Motion pipeline path.  
+**FalkorDB** for graph mirror.  
+**Linkup** for research.  
+**LaserData** for event streams.  
+**Guild** for experiment records.  
+**Snyk** for security scans.
 
-“Memory Meets Motion asked for long-term context **and** autonomous execution.
+They’re real packages in the repo, called from the product.  
+No API keys? We stay labeled **DEMO**. We don’t fake live.”
 
-Continuum is that bridge — with sponsor clients actually in the path, and DEMO mode that doesn’t pretend when something isn’t live.
-
-We’re not trying to win chat.  
-We’re trying to **retire unfinished work**.”
-
-### 2:45 — Land the plane
-*(Slide 10 · smile, stop talking on the last line)*
+### 2:40 — Close
+*(Slide 10)*
 
 “Continuum.  
 Memory that moves.
@@ -110,18 +130,16 @@ Thanks — happy to take questions.”
 
 ---
 
-## Wow beats (hit these or the pitch flattens)
+## Wow beats
 
-1. **$220k** said out loud before the product name lands a second time.  
-2. **Silence** for 2–3 seconds after you click Close My Morning.  
-3. **Citations** — scroll slowly; say “inspectable.”  
-4. **Debt before → after** — point at the numbers with your finger/cursor.  
-5. Last line is short. Don’t add “any questions?” twice.
+1. **$220k** early  
+2. **Silence** after Close My Morning  
+3. **Citations** — “inspectable”  
+4. **Debt before → after**  
+5. **Settings sponsor panel** — prove the six SDKs  
+6. Short last line  
 
 ## If time is dying
 
-Skip slides 8–9 details. Stay on the run. Say: “Sponsors are wired — happy to unpack after.” Close on Continuum.
-
-## If the run is slow
-
-“While Motion’s writing back…” → gesture at debt score → “this is the number we came to burn.” Don’t apologize more than once.
+Keep citations + debt. Compress sponsors to one sentence:  
+“All six sponsor SDKs are installed and invoked — Settings shows the status.”
