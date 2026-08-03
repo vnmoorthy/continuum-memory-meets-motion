@@ -49,6 +49,16 @@ export interface OpenLoop extends MemoryNode {
   dueAt?: string;
   contextNodeIds: string[];
   suggestedActions: string[];
+  /** Canonical risk bucket — shared ARR must not double-count across loops. */
+  riskEntityId?: string;
+}
+
+/** Unique financial risk attribution unit (e.g. one ARR renewal). */
+export interface RiskEntity {
+  id: string;
+  label: string;
+  dollars: number;
+  sourceNodeId?: string;
 }
 
 export interface Citation {
@@ -86,6 +96,11 @@ export interface MotionRun {
   startedAt: string;
   finishedAt?: string;
   summary?: string;
+  idempotencyKey?: string;
+  workspaceId?: string;
+  /** True when research/notify steps are simulated (demo mode). */
+  simulated?: boolean;
+  mode?: "demo" | "connected";
 }
 
 export interface Artifact {
@@ -148,6 +163,7 @@ export interface GraphSnapshot {
   loops: OpenLoop[];
   runs: MotionRun[];
   watchdogs: WatchdogRule[];
+  riskEntities: RiskEntity[];
   debtBaseline: number;
   dollarsFreedLifetime: number;
   updatedAt: string;

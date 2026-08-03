@@ -1,67 +1,108 @@
 import { NextResponse } from "next/server";
+import { withWorkspace, jsonOk, handleApiError } from "@/lib/api/http";
 import { startAndExecute } from "@/lib/motion/runtime";
+import {
+  WatchdogPatchBodySchema,
+  WatchdogScanBodySchema,
+  zodErrorResponse,
+} from "@/lib/schemas";
 import { getSnapshot, patchWatchdog, saveWatchdogs } from "@/lib/store/db";
 import { scanWatchdogs } from "@/lib/watchdogs";
 import type { WatchdogRule } from "@/lib/types";
+import { modePayload } from "@/lib/mode";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const snapshot = await getSnapshot();
-  const hits = scanWatchdogs(snapshot);
-  return NextResponse.json({
-    watchdogs: snapshot.watchdogs,
-    hits,
-  });
+  try {
+    const session = await withWorkspace();
+    const snapshot = await getSnapshot(session.workspaceId);
+    const hits = scanWatchdogs(snapshot);
+    return jsonOk({
+      watchdogs: snapshot.watchdogs,
+      hits,
+    });
+  } catch (err) {
+    return handleApiError(err);
+  }
 }
 
 export async function PATCH(req: Request) {
-  const body = await req.json();
-  if (body?.watchdogs && Array.isArray(body.watchdogs)) {
-    const snapshot = await saveWatchdogs(body.watchdogs as WatchdogRule[]);
-    return NextResponse.json({ watchdogs: snapshot.watchdogs });
+  try {
+    const session = await withWorkspace();
+    const raw = await req.json().catch(() => null);
+    const parsed = WatchdogPatchBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(zodErrorResponse(parsed.error), { status: 422 });
+    }
+    const body = parsed.data;
+    if (body.watchdogs && Array.isArray(body.watchdogs)) {
+      const snapshot = await saveWatchdogs(session.workspaceId, body.watchdogs as WatchdogRule[]);
+      return jsonOk({ watchdogs: snapshot.watchdogs });
+    }
+    if (!body.id) {
+      return NextResponse.json({ error: "id required", _meta: modePayload() }, { status: 400 });
+    }
+    const snapshot = await patchWatchdog(
+      session.workspaceId,
+      body.id,
+      body.patch ?? { enabled: body.enabled },
+    );
+    return jsonOk({ watchdogs: snapshot.watchdogs });
+  } catch (err) {
+    return handleApiError(err);
   }
-  if (!body?.id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const snapshot = await patchWatchdog(body.id, body.patch ?? { enabled: body.enabled });
-  return NextResponse.json({ watchdogs: snapshot.watchdogs });
 }
 
-/** Scan now — optionally auto-queue matching loops (LaserData-style triggers). */
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const autoQueue = Boolean(body?.autoQueue ?? true);
-  const limit = Math.min(Number(body?.limit ?? 2), 3);
-
-  const snapshot = await getSnapshot();
-  const hits = scanWatchdogs(snapshot);
-
-  // bump fire metadata
-  for (const hit of hits) {
-    const rule = snapshot.watchdogs.find((w) => w.id === hit.ruleId);
-    if (rule) {
-      rule.fireCount += 1;
-      rule.lastFiredAt = new Date().toISOString();
+  try {
+    const session = await withWorkspace();
+    const raw = await req.json().catch(() => ({}));
+    const parsed = WatchdogScanBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(zodErrorResponse(parsed.error), { status: 422 });
     }
-  }
-  await saveWatchdogs(snapshot.watchdogs);
+    const { autoQueue, limit } = parsed.data;
 
-  const runs = [];
-  if (autoQueue) {
-    for (const hit of hits.slice(0, limit)) {
-      try {
-        const run = await startAndExecute(hit.loopId, "watchdog");
-        runs.push({ runId: run.id, loopId: hit.loopId, ruleId: hit.ruleId });
-      } catch (err) {
-        runs.push({
-          loopId: hit.loopId,
-          ruleId: hit.ruleId,
-          error: err instanceof Error ? err.message : "failed",
-        });
+    const snapshot = await getSnapshot(session.workspaceId);
+    const hits = scanWatchdogs(snapshot);
+
+    for (const hit of hits) {
+      const rule = snapshot.watchdogs.find((w) => w.id === hit.ruleId);
+      if (rule) {
+        rule.fireCount += 1;
+        rule.lastFiredAt = new Date().toISOString();
       }
     }
-  }
+    await saveWatchdogs(session.workspaceId, snapshot.watchdogs);
 
-  return NextResponse.json({
-    scannedAt: new Date().toISOString(),
-    hits,
-    queued: runs,
-  });
+    const runs = [];
+    if (autoQueue) {
+      for (const hit of hits.slice(0, limit)) {
+        const result = await startAndExecute(session.workspaceId, hit.loopId, "watchdog");
+        if (!result.ok) {
+          runs.push({
+            loopId: hit.loopId,
+            ruleId: hit.ruleId,
+            error: result.error,
+          });
+        } else {
+          runs.push({
+            runId: result.run.id,
+            loopId: hit.loopId,
+            ruleId: hit.ruleId,
+            existing: !result.created,
+          });
+        }
+      }
+    }
+
+    return jsonOk({
+      scannedAt: new Date().toISOString(),
+      hits,
+      queued: runs,
+    });
+  } catch (err) {
+    return handleApiError(err);
+  }
 }

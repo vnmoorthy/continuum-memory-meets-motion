@@ -26,6 +26,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 border-b border-line bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] backdrop-blur-xl">
+        <div className="border-b border-amber-800/40 bg-amber-950/40 px-4 py-1.5 text-center text-xs text-amber-100 md:px-6">
+          DEMO MODE — simulated Motion, research, and notify. No live connectors or outbound
+          delivery. Each browser session is an isolated workspace.
+        </div>
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 md:px-6">
           <Link href="/" className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center border border-line-strong bg-bg-soft">
@@ -62,9 +66,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
+            <span className="hidden items-center gap-2 chip sm:inline-flex border border-amber-700/40 bg-amber-950/30 text-amber-200">
+              DEMO
+            </span>
             <span className="hidden items-center gap-2 chip sm:inline-flex">
               <span className="live-dot" />
-              Live graph
+              Workspace graph
             </span>
             <Link href="/app/loops" className="btn btn-primary text-sm">
               Close a loop
