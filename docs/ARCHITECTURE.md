@@ -9,6 +9,21 @@
 3. Runs **Cited Motion** pipelines that produce deliverables grounded in memory nodes  
 4. **Writes back** results so the world model and debt metrics update  
 
+## Sponsor SDK wiring
+
+Continuum **imports and invokes** each Memory Meets Motion sponsor client:
+
+| Sponsor | Package | Used for |
+| --- | --- | --- |
+| RocketRide | `rocketride` | Submit `close-open-loop` pipeline when `ROCKETRIDE_APIKEY` set; else local worker |
+| FalkorDB | `falkordb` | Mirror nodes/edges via OpenCypher when `FALKORDB_HOST` set |
+| Linkup | `linkup-sdk` | Live web research in Motion tool step when `LINKUP_API_KEY` set |
+| LaserData | `@laserdata/laser-sdk` | Publish Motion/watchdog events to Iggy streams; JSONL fallback |
+| Guild.ai | `@guildai/cli` + `.guild/continuum-runs` | Experiment records per Motion completion |
+| Snyk | `snyk` | `npm run snyk:test` + Settings “Run Snyk scan” |
+
+Status API: `GET /api/sponsors`. Without credentials, adapters report `not_configured` / DEMO and never invent live delivery.
+
 ## System diagram
 
 ```mermaid
@@ -16,17 +31,18 @@ flowchart TB
   UI[Continuum Web · Open Loop OS]
   API[REST + SSE]
 
-  subgraph MemoryPlane[Memory Plane · FalkorDB-ready]
-    Store[(Graph Store)]
+  subgraph MemoryPlane[Memory Plane · FalkorDB SDK]
+    Store[(SQLite + optional FalkorDB)]
     Search[Search + Subgraph]
     Debt[Open Loop Debt engine]
   end
 
-  subgraph MotionPlane[Motion Plane · RocketRide-compatible]
+  subgraph MotionPlane[Motion Plane · RocketRide SDK]
     Morning[Close My Morning]
-    Watch[Watchdogs · LaserData-style]
+    Watch[Watchdogs · LaserData SDK]
     Runtime[Cited Motion Runtime]
     Pipe[close-open-loop.json]
+    Linkup[Linkup SDK research]
   end
 
   UI --> API

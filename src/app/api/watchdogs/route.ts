@@ -6,6 +6,7 @@ import {
   WatchdogScanBodySchema,
   zodErrorResponse,
 } from "@/lib/schemas";
+import { publishLaserEvent } from "@/lib/sponsors";
 import { getSnapshot, patchWatchdog, saveWatchdogs } from "@/lib/store/db";
 import { scanWatchdogs } from "@/lib/watchdogs";
 import type { WatchdogRule } from "@/lib/types";
@@ -76,6 +77,12 @@ export async function POST(req: Request) {
     }
     await saveWatchdogs(session.workspaceId, snapshot.watchdogs);
 
+    const laser = await publishLaserEvent({
+      type: "watchdog.scan",
+      workspaceId: session.workspaceId,
+      payload: { hitCount: hits.length, autoQueue, limit },
+    });
+
     const runs = [];
     if (autoQueue) {
       for (const hit of hits.slice(0, limit)) {
@@ -93,6 +100,13 @@ export async function POST(req: Request) {
             ruleId: hit.ruleId,
             existing: !result.created,
           });
+          await publishLaserEvent({
+            type: "watchdog.queued",
+            workspaceId: session.workspaceId,
+            runId: result.run.id,
+            loopId: hit.loopId,
+            payload: { ruleId: hit.ruleId },
+          });
         }
       }
     }
@@ -101,6 +115,7 @@ export async function POST(req: Request) {
       scannedAt: new Date().toISOString(),
       hits,
       queued: runs,
+      laser,
     });
   } catch (err) {
     return handleApiError(err);

@@ -9,6 +9,7 @@ node_modules/
 .env*.local
 tsconfig.tsbuildinfo
 .gstack/
+.guild/continuum-runs/
 coverage/
 playwright-report/
 test-results/
@@ -16,5 +17,7 @@ blob-report/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+data/laser-events.jsonl
+data/snyk-last-scan.json
 
 .vercel

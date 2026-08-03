@@ -3,6 +3,15 @@ import { computeDebtMetrics, dollarsForLoop } from "../debt";
 import { getMemorySubgraph } from "../memory/graph";
 import { demoPrefix, getContinuumMode, isDemoMode } from "../mode";
 import {
+  linkupResearch,
+  mirrorEdgeToFalkor,
+  mirrorNodeToFalkor,
+  publishLaserEvent,
+  recordGuildExperiment,
+  rocketrideExecutePipeline,
+} from "../sponsors";
+import type { ResearchResult } from "../sponsors";
+import {
   ConflictError,
   enqueueJob,
   getActiveRunForLoop,
@@ -74,31 +83,10 @@ function withCitations(body: string, citations: Citation[]): string {
   return `${body.trim()}\n\n${citationsBlock(citations)}\n`;
 }
 
-async function webResearchStub(topic: string) {
-  const findings = [
-    {
-      source: "[DEMO SIMULATED] Vertex AI Latency Benchmarks 2026",
-      claim:
-        "Graph-augmented retrieval cut p95 latency 18–27% vs flat vector RAG on multi-hop queries. (Simulated — not fetched live.)",
-    },
-    {
-      source: "[DEMO SIMULATED] Gartner Emerging Tech: Stateful Agents",
-      claim:
-        "Teams with durable memory graphs close 2.4× more operational loops per week. (Simulated — not fetched live.)",
-    },
-    {
-      source: "[DEMO SIMULATED] Acme Health Peer Review",
-      claim:
-        "Enterprise healthcare renewals fail most often on onboarding completeness, not feature gaps. (Simulated.)",
-    },
-  ];
-  return { topic, findings, simulated: true as const };
-}
-
 function buildBrief(
   loop: OpenLoop,
   citations: Citation[],
-  research?: Awaited<ReturnType<typeof webResearchStub>>,
+  research?: ResearchResult,
 ): Artifact {
   const cite = (id: string) => {
     const c = citations.find((x) => x.nodeId === id);
@@ -147,16 +135,22 @@ ${
 function buildResearchNote(
   loop: OpenLoop,
   citations: Citation[],
-  research: Awaited<ReturnType<typeof webResearchStub>>,
+  research: ResearchResult,
 ): Artifact {
-  const body = `# Competitor & Latency Scan${isDemoMode() ? " (DEMO — simulated sources)" : ""}
+  const body = `# Competitor & Latency Scan${research.simulated ? " (DEMO — simulated sources)" : ` via ${research.provider}`}
 For: ${loop.title}
 
 ## Query
 ${research.topic}
 
 ## Findings
-${research.findings.map((f) => `### ${f.source}\n${f.claim}`).join("\n\n")}
+${research.findings
+  .map((f) => {
+    const link = f.url ? `\nURL: ${f.url}` : "";
+    const when = f.retrievedAt ? `\nRetrieved: ${f.retrievedAt}` : "";
+    return `### ${f.source}${link}${when}\n${f.claim}`;
+  })
+  .join("\n\n")}
 
 ## Memory grounding
 RFC draft and graph-first decision shape the recommendation:
@@ -225,13 +219,17 @@ Cited context: ${citations.map((c) => `[[${c.title}|${c.nodeId}]]`).join("; ")}.
 function pickArtifact(
   loop: OpenLoop,
   citations: Citation[],
-  research?: Awaited<ReturnType<typeof webResearchStub>>,
+  research?: ResearchResult,
 ) {
   if (loop.id.includes("renewal") || loop.title.toLowerCase().includes("brief")) {
     return buildBrief(loop, citations, research);
   }
   if (loop.id.includes("rfc") || loop.title.toLowerCase().includes("competitor")) {
-    return buildResearchNote(loop, citations, research ?? { topic: loop.title, findings: [], simulated: true });
+    return buildResearchNote(
+      loop,
+      citations,
+      research ?? { topic: loop.title, findings: [], simulated: true, provider: "demo" },
+    );
   }
   if (loop.id.includes("onboarding") || loop.title.toLowerCase().includes("playbook")) {
     return buildChecklist(loop, citations);
@@ -436,26 +434,48 @@ export async function executeRun(
       loop.tags.includes("research") ||
       loop.title.toLowerCase().includes("brief") ||
       loop.title.toLowerCase().includes("competitor");
+
+    // RocketRide: attempt cloud pipeline submission when credentials exist (non-blocking for local path)
+    try {
+      const rr = await rocketrideExecutePipeline({
+        loopId: loop.id,
+        loopTitle: loop.title,
+        contextPack: citations.map((c) => `${c.kind}:${c.title}`).join(" | "),
+      });
+      if (rr) {
+        pushEvent(run, "success", `RocketRide pipeline submitted (token ${rr.token.slice(0, 8)}…).`);
+      } else {
+        pushEvent(run, "info", "RocketRide SDK loaded — local worker executing pipeline (no ROCKETRIDE_APIKEY).");
+      }
+    } catch (err) {
+      pushEvent(
+        run,
+        "warn",
+        `RocketRide submit failed; continuing on local worker. ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     const research = needsResearch
-      ? await webResearchStub(`${loop.title} latency graph retrieval enterprise renewal`)
+      ? await linkupResearch(`${loop.title} latency graph retrieval enterprise renewal`)
       : undefined;
+    const researchLive = Boolean(research && !research.simulated);
     markStep(
       run,
       "tool",
       "done",
       needsResearch
-        ? isDemoMode()
-          ? `DEMO simulated research pack (${research?.findings.length ?? 0} synthetic sources). Not live.`
-          : `Live context pack assembled (${research?.findings.length ?? 0} sources).`
+        ? researchLive
+          ? `Linkup live context (${research?.findings.length ?? 0} sources, provider=${research?.provider}).`
+          : `DEMO/simulated research pack (${research?.findings.length ?? 0} sources). Not live Linkup.`
         : "Skipped external research — memory citations sufficient.",
     );
     pushEvent(
       run,
       "info",
       needsResearch
-        ? isDemoMode()
-          ? "DEMO: synthetic research attached — not Linkup/live web."
-          : "Research enrichment attached."
+        ? researchLive
+          ? `Linkup enrichment attached (${research?.providerRequestId ?? "ok"}).`
+          : "DEMO: synthetic research attached — set LINKUP_API_KEY for live web."
         : "No external research required.",
     );
     await saveRun(workspaceId, run);
@@ -497,22 +517,32 @@ export async function executeRun(
       updatedAt: artifact.createdAt,
     };
     await upsertNode(workspaceId, artifactNode);
-    await upsertEdge(workspaceId, {
+    const falkorNode = await mirrorNodeToFalkor(artifactNode);
+    if (falkorNode.mirrored) {
+      pushEvent(run, "info", "FalkorDB mirror: artifact node upserted.");
+    } else if (falkorNode.error) {
+      pushEvent(run, "warn", `FalkorDB mirror skipped: ${falkorNode.error}`);
+    }
+    const producedEdge = {
       id: `edge-${nanoid(8)}`,
       source: loop.id,
       target: artifactNode.id,
-      kind: "produced",
+      kind: "produced" as const,
       weight: 1,
       createdAt: new Date().toISOString(),
-    });
-    await upsertEdge(workspaceId, {
+    };
+    const closesEdge = {
       id: `edge-${nanoid(8)}`,
       source: artifactNode.id,
       target: loop.id,
-      kind: "closes",
+      kind: "closes" as const,
       weight: 1,
       createdAt: new Date().toISOString(),
-    });
+    };
+    await upsertEdge(workspaceId, producedEdge);
+    await upsertEdge(workspaceId, closesEdge);
+    await mirrorEdgeToFalkor(producedEdge);
+    await mirrorEdgeToFalkor(closesEdge);
     await updateLoop(workspaceId, loop.id, { status: "closed" });
     await recordDebtFreed(workspaceId, dollars);
 
@@ -534,19 +564,58 @@ export async function executeRun(
     await saveRun(workspaceId, run);
     await onProgress?.(run);
     await sleep(process.env.CONTINUUM_FAST === "1" ? 5 : 450);
+
+    const laser = await publishLaserEvent({
+      type: "motion.completed",
+      workspaceId,
+      runId: run.id,
+      loopId: loop.id,
+      payload: {
+        status: "succeeded",
+        debtBefore: run.debtBefore,
+        debtAfter: run.debtAfter,
+        dollarsFreed: run.dollarsFreed,
+      },
+    });
+    pushEvent(
+      run,
+      laser.published ? "success" : "info",
+      laser.published
+        ? "LaserData stream published continuum.events."
+        : `LaserData SDK event mirrored to JSONL (${laser.transport})${laser.error ? `: ${laser.error}` : ""}.`,
+    );
+
+    await recordGuildExperiment({
+      runId: run.id,
+      loopId: loop.id,
+      title: loop.title,
+      status: "succeeded",
+      debtBefore: run.debtBefore,
+      debtAfter: run.debtAfter,
+      dollarsFreed: run.dollarsFreed,
+      mode: getContinuumMode(),
+      providerFlags: {
+        linkup: Boolean(research && !research.simulated),
+        rocketride: Boolean(process.env.ROCKETRIDE_APIKEY || process.env.ROCKETRIDE_AUTH),
+        falkordb: Boolean(process.env.FALKORDB_HOST || process.env.FALKOR_HOST),
+        laserdata: laser.published,
+      },
+    });
+    pushEvent(run, "info", "Guild experiment record written under .guild/continuum-runs/.");
+
     markStep(
       run,
       "notify",
       "done",
       isDemoMode()
-        ? "DEMO: in-app completion signal only — no outbound email/Slack delivery receipt."
-        : "Stakeholders notified.",
+        ? "DEMO: in-app + Laser/Guild telemetry only — no outbound email/Slack delivery receipt."
+        : "Stakeholders notified via configured channels + Laser/Guild telemetry.",
     );
     pushEvent(
       run,
       "success",
       isDemoMode()
-        ? "Motion complete (DEMO). No outbound notifications were sent."
+        ? "Motion complete (DEMO). Sponsor SDKs invoked where configured; no outbound email."
         : "Motion complete. Memory meets motion.",
     );
     run.status = "succeeded";
