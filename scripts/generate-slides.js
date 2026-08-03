@@ -8,152 +8,204 @@ fs.mkdirSync(outDir, { recursive: true });
 const pptx = new PptxGenJS();
 pptx.defineLayout({ name: "WIDE", width: 13.333, height: 7.5 });
 pptx.layout = "WIDE";
-pptx.author = "Continuum";
-pptx.title = "Continuum — Memory Meets Motion";
-pptx.subject = "Hackathon pitch deck";
+pptx.author = "vnmoorthy";
+pptx.title = "Continuum — Open Loop OS";
+pptx.subject = "Memory Meets Motion pitch deck";
 
-const BG = "0A0C0F";
-const INK = "F3EFE7";
-const MUTED = "8F96A3";
-const ACCENT = "D6FF4B";
-const MEMORY = "6EA8FF";
-const MOTION = "FF8F5A";
-const SOFT = "171C24";
+const BG = "07090C";
+const INK = "ECE6DA";
+const MUTED = "9AA3B0";
+const ACCENT = "E4FF5C";
+const MEMORY = "5EC8C0";
+const MOTION = "E8956C";
+const SOFT = "0E1218";
+const SOFT2 = "151B24";
+const ACCENT_INK = "0C1006";
 
-function base(slide) {
+function wash(slide) {
   slide.background = { color: BG };
   slide.addShape(pptx.shapes.RECTANGLE, {
     x: 0,
     y: 0,
     w: 13.333,
-    h: 0.08,
+    h: 7.5,
+    fill: { color: BG },
+  });
+  // atmospheric blobs
+  slide.addShape(pptx.shapes.OVAL, {
+    x: -1.5,
+    y: -2,
+    w: 6,
+    h: 5,
+    fill: { color: "0A2A28", transparency: 55 },
+  });
+  slide.addShape(pptx.shapes.OVAL, {
+    x: 9.5,
+    y: 4.2,
+    w: 5.5,
+    h: 4.5,
+    fill: { color: "2A1A12", transparency: 50 },
+  });
+  slide.addShape(pptx.shapes.RECTANGLE, {
+    x: 0,
+    y: 0,
+    w: 13.333,
+    h: 0.06,
     fill: { color: ACCENT },
   });
 }
 
 function footer(slide, n) {
-  slide.addText("CONTINUUM  ·  MEMORY MEETS MOTION", {
+  slide.addShape(pptx.shapes.RECTANGLE, {
+    x: 0.6,
+    y: 6.95,
+    w: 12.1,
+    h: 0.01,
+    fill: { color: "222831" },
+  });
+  slide.addText("CONTINUUM  ·  OPEN LOOP OS  ·  MEMORY MEETS MOTION", {
     x: 0.6,
     y: 7.05,
     w: 10,
-    h: 0.3,
-    fontSize: 10,
+    h: 0.28,
+    fontSize: 9,
     color: MUTED,
-    fontFace: "Arial",
+    fontFace: "Calibri",
+    charSpacing: 3,
   });
-  slide.addText(String(n), {
-    x: 12.2,
+  slide.addText(String(n).padStart(2, "0"), {
+    x: 11.8,
     y: 7.05,
-    w: 0.6,
-    h: 0.3,
+    w: 0.9,
+    h: 0.28,
     fontSize: 10,
-    color: MUTED,
+    color: ACCENT,
     align: "right",
-    fontFace: "Arial",
+    fontFace: "Calibri",
+  });
+}
+
+function kicker(slide, text) {
+  slide.addText(text, {
+    x: 0.7,
+    y: 0.45,
+    w: 12,
+    h: 0.35,
+    fontSize: 12,
+    color: ACCENT,
+    fontFace: "Calibri",
+    bold: true,
+    charSpacing: 4,
   });
 }
 
 // 1 Title
 {
   const s = pptx.addSlide();
-  base(s);
+  wash(s);
   s.addShape(pptx.shapes.RECTANGLE, {
-    x: 0.6,
-    y: 1.8,
-    w: 0.18,
-    h: 2.8,
+    x: 0.7,
+    y: 1.55,
+    w: 0.12,
+    h: 3.4,
     fill: { color: ACCENT },
   });
   s.addText("CONTINUUM", {
-    x: 1.1,
-    y: 1.9,
+    x: 1.15,
+    y: 1.7,
     w: 11,
-    h: 1.2,
-    fontSize: 60,
+    h: 1.15,
+    fontSize: 64,
     bold: true,
     color: INK,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
-  s.addText("The Open Loop OS.", {
-    x: 1.1,
-    y: 3.1,
+  s.addText("The Open Loop OS", {
+    x: 1.15,
+    y: 2.95,
     w: 11,
-    h: 0.6,
+    h: 0.55,
     fontSize: 28,
     color: ACCENT,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   s.addText(
-    "Measure Open Loop Debt. Burn it with Cited Motion. Write results back into memory.\nBuilt for Memory Meets Motion · Agentic Workflows & Stateful AI",
+    "Measure unfinished work as Open Loop Debt.\nBurn it with Cited Motion. Write results back into memory.",
     {
-      x: 1.1,
-      y: 4.0,
+      x: 1.15,
+      y: 3.75,
       w: 10,
-      h: 1.0,
+      h: 0.9,
       fontSize: 16,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     },
   );
+  s.addText("Memory Meets Motion  ·  Agentic Workflows & Stateful AI", {
+    x: 1.15,
+    y: 5.0,
+    w: 10,
+    h: 0.35,
+    fontSize: 12,
+    color: MEMORY,
+    fontFace: "Calibri",
+    charSpacing: 2,
+  });
   footer(s, 1);
 }
 
 // 2 Problem
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("THE PROBLEM", {
-    x: 0.6,
-    y: 0.5,
+  wash(s);
+  kicker(s, "THE PROBLEM");
+  s.addText("Residue piles up.\nAI either remembers or acts — rarely both.", {
+    x: 0.7,
+    y: 1.0,
     w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    fontFace: "Arial",
-    bold: true,
-  });
-  s.addText("Organizations drown in residue.\nAI either remembers or acts — rarely both.", {
-    x: 0.6,
-    y: 1.1,
-    w: 12,
-    h: 1.4,
-    fontSize: 32,
+    h: 1.5,
+    fontSize: 34,
     color: INK,
-    fontFace: "Arial",
-    bold: true,
+    fontFace: "Georgia",
   });
   const cards = [
-    { t: "Meetings", d: "Notes without owners or next actions" },
-    { t: "Promises", d: "Slack commitments that evaporate" },
-    { t: "Agents", d: "Act once, forget the relationship graph" },
+    { t: "Meetings", d: "Notes without owners or next actions", c: MEMORY },
+    { t: "Promises", d: "Slack commitments that evaporate", c: ACCENT },
+    { t: "Agents", d: "Act once, forget the relationship graph", c: MOTION },
   ];
   cards.forEach((c, i) => {
-    const x = 0.6 + i * 4.1;
+    const x = 0.7 + i * 4.15;
     s.addShape(pptx.shapes.RECTANGLE, {
       x,
-      y: 3.2,
-      w: 3.8,
-      h: 2.4,
+      y: 3.1,
+      w: 3.9,
+      h: 0.08,
+      fill: { color: c.c },
+    });
+    s.addShape(pptx.shapes.RECTANGLE, {
+      x,
+      y: 3.18,
+      w: 3.9,
+      h: 2.5,
       fill: { color: SOFT },
     });
     s.addText(c.t, {
       x: x + 0.3,
       y: 3.5,
-      w: 3.2,
+      w: 3.3,
       h: 0.5,
-      fontSize: 20,
+      fontSize: 22,
       color: INK,
-      bold: true,
-      fontFace: "Arial",
+      fontFace: "Georgia",
     });
     s.addText(c.d, {
       x: x + 0.3,
       y: 4.2,
-      w: 3.2,
+      w: 3.3,
       h: 1.0,
-      fontSize: 14,
+      fontSize: 15,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
   });
   footer(s, 2);
@@ -162,57 +214,46 @@ function footer(slide, n) {
 // 3 Insight
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("THE INSIGHT", {
-    x: 0.6,
-    y: 0.5,
-    w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
+  wash(s);
+  kicker(s, "THE INSIGHT");
   s.addText("Memory Meets Motion is one loop.", {
-    x: 0.6,
-    y: 1.2,
+    x: 0.7,
+    y: 1.1,
     w: 12,
     h: 0.8,
-    fontSize: 34,
+    fontSize: 36,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   s.addText(
-    "Durable context must power autonomous execution.\nEvery action must write back into memory.",
+    "Durable context must power autonomous execution.\nEvery action must write back into memory — or the debt returns.",
     {
-      x: 0.6,
-      y: 2.2,
-      w: 12,
+      x: 0.7,
+      y: 2.1,
+      w: 11.5,
       h: 1.0,
-      fontSize: 20,
+      fontSize: 18,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     },
   );
-  s.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
-    x: 0.6,
+  s.addShape(pptx.shapes.RECTANGLE, {
+    x: 0.7,
     y: 3.6,
-    w: 12.1,
-    h: 2.2,
+    w: 11.9,
+    h: 2.1,
     fill: { color: SOFT },
-    rectRadius: 0.05,
   });
   s.addText("Residue  →  Graph Memory  →  Open Loops  →  Motion  →  Write-back  →  Closed", {
-    x: 0.9,
+    x: 1.0,
     y: 4.3,
-    w: 11.5,
+    w: 11.3,
     h: 0.7,
-    fontSize: 18,
+    fontSize: 17,
     color: ACCENT,
     bold: true,
     align: "center",
-    fontFace: "Arial",
+    fontFace: "Calibri",
   });
   footer(s, 3);
 }
@@ -220,266 +261,232 @@ function footer(slide, n) {
 // 4 Product
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("THE PRODUCT", {
-    x: 0.6,
-    y: 0.5,
-    w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
+  wash(s);
+  kicker(s, "THE PRODUCT");
   s.addText("Continuum", {
-    x: 0.6,
-    y: 1.1,
+    x: 0.7,
+    y: 1.0,
     w: 12,
     h: 0.7,
-    fontSize: 40,
+    fontSize: 42,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   s.addText(
-    "A knowledge graph of organizational memory that powers agents to close open loops — and gets smarter every time it acts.",
+    "Open Loop OS — a knowledge graph of organizational memory that powers agents to close unfinished work, with citations, then gets smarter every time it acts.",
     {
-      x: 0.6,
-      y: 1.9,
+      x: 0.7,
+      y: 1.8,
       w: 11.5,
       h: 1.0,
-      fontSize: 18,
+      fontSize: 17,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     },
   );
   const cols = [
     { c: MEMORY, t: "MEMORY", d: "People, projects, decisions, artifacts, loops as a property graph" },
-    { c: ACCENT, t: "BRIDGE", d: "Open loops carry context, priority, and suggested actions" },
-    { c: MOTION, t: "MOTION", d: "RocketRide-compatible pipelines retrieve, act, and write back" },
+    { c: ACCENT, t: "DEBT", d: "Open loops scored by priority × age × unique $ at risk" },
+    { c: MOTION, t: "MOTION", d: "Cited agents retrieve, act, write back — debt burns" },
   ];
   cols.forEach((col, i) => {
-    const x = 0.6 + i * 4.1;
-    s.addShape(pptx.shapes.RECTANGLE, { x, y: 3.3, w: 3.8, h: 0.12, fill: { color: col.c } });
+    const x = 0.7 + i * 4.15;
+    s.addShape(pptx.shapes.RECTANGLE, { x, y: 3.2, w: 3.9, h: 0.1, fill: { color: col.c } });
     s.addShape(pptx.shapes.RECTANGLE, {
       x,
-      y: 3.42,
-      w: 3.8,
-      h: 2.4,
+      y: 3.3,
+      w: 3.9,
+      h: 2.5,
       fill: { color: SOFT },
     });
     s.addText(col.t, {
-      x: x + 0.25,
-      y: 3.7,
+      x: x + 0.28,
+      y: 3.55,
       w: 3.3,
       h: 0.4,
-      fontSize: 16,
+      fontSize: 14,
       color: col.c,
       bold: true,
-      fontFace: "Arial",
+      fontFace: "Calibri",
+      charSpacing: 2,
     });
     s.addText(col.d, {
-      x: x + 0.25,
-      y: 4.3,
+      x: x + 0.28,
+      y: 4.15,
       w: 3.3,
-      h: 1.2,
-      fontSize: 14,
+      h: 1.3,
+      fontSize: 15,
       color: INK,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
   });
   footer(s, 4);
 }
 
-// 5 Demo setup
+// 5 Demo world
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("LIVE DEMO", {
-    x: 0.6,
-    y: 0.5,
-    w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
+  wash(s);
+  kicker(s, "LIVE DEMO");
   s.addText("Seed world: Northstar × Acme Health", {
-    x: 0.6,
-    y: 1.1,
+    x: 0.7,
+    y: 1.0,
     w: 12,
     h: 0.7,
     fontSize: 30,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   const items = [
-    "Memory graph links Maya, Sam, Acme renewal, QBR notes",
-    "Open loop: Draft Acme renewal-risk brief for Maya (P1)",
-    "One click starts the close-open-loop Motion pipeline",
-    "Artifact writes back; loop status becomes closed",
+    { t: "Graph", d: "Maya, Sam, Acme renewal, QBR notes — linked" },
+    { t: "Debt", d: "$268k unique risk · Acme $220k counted once" },
+    { t: "Loop", d: "Draft Acme renewal-risk brief for Maya (P1)" },
+    { t: "Close", d: "One click → Cited Motion → write-back → debt drops" },
   ];
-  items.forEach((t, i) => {
-    s.addShape(pptx.shapes.OVAL, {
+  items.forEach((it, i) => {
+    const y = 2.0 + i * 1.05;
+    s.addShape(pptx.shapes.RECTANGLE, {
       x: 0.7,
-      y: 2.2 + i * 0.9,
-      w: 0.35,
-      h: 0.35,
-      fill: { color: ACCENT },
+      y,
+      w: 11.9,
+      h: 0.9,
+      fill: { color: SOFT },
     });
-    s.addText(String(i + 1), {
+    s.addShape(pptx.shapes.RECTANGLE, {
       x: 0.7,
-      y: 2.22 + i * 0.9,
-      w: 0.35,
-      h: 0.35,
-      fontSize: 12,
-      color: BG,
-      align: "center",
-      valign: "middle",
+      y,
+      w: 0.1,
+      h: 0.9,
+      fill: { color: i % 2 === 0 ? MEMORY : MOTION },
+    });
+    s.addText(it.t, {
+      x: 1.1,
+      y: y + 0.22,
+      w: 2.2,
+      h: 0.45,
+      fontSize: 16,
+      color: ACCENT,
       bold: true,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
-    s.addText(t, {
-      x: 1.3,
-      y: 2.15 + i * 0.9,
-      w: 11,
-      h: 0.5,
-      fontSize: 18,
+    s.addText(it.d, {
+      x: 3.4,
+      y: y + 0.22,
+      w: 8.8,
+      h: 0.45,
+      fontSize: 16,
       color: INK,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
   });
   footer(s, 5);
 }
 
-// 6 Demo motion
+// 6 Pipeline
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("MOTION PIPELINE", {
-    x: 0.6,
-    y: 0.5,
+  wash(s);
+  kicker(s, "MOTION PIPELINE");
+  s.addText("close-open-loop", {
+    x: 0.7,
+    y: 0.95,
     w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
-  s.addText("close-open-loop.json", {
-    x: 0.6,
-    y: 1.0,
-    w: 12,
-    h: 0.6,
-    fontSize: 28,
+    h: 0.55,
+    fontSize: 30,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   const steps = [
-    ["Retrieve", "Memory subgraph"],
-    ["Reason", "Owners & pressure"],
-    ["Enrich", "Live web context"],
-    ["Act", "Draft artifact"],
-    ["Write", "Close the loop"],
-    ["Notify", "Surface result"],
+    ["01", "Retrieve", "Memory subgraph", MEMORY],
+    ["02", "Reason", "Owners & pressure", MEMORY],
+    ["03", "Enrich", "Linkup context", ACCENT],
+    ["04", "Act", "Cited artifact", MOTION],
+    ["05", "Write", "Close the loop", MOTION],
+    ["06", "Notify", "Laser + Guild", MOTION],
   ];
   steps.forEach((st, i) => {
-    const x = 0.55 + (i % 3) * 4.2;
-    const y = 2.0 + Math.floor(i / 3) * 2.2;
+    const x = 0.7 + (i % 3) * 4.15;
+    const y = 1.85 + Math.floor(i / 3) * 2.25;
     s.addShape(pptx.shapes.RECTANGLE, {
       x,
       y,
-      w: 3.9,
-      h: 1.9,
+      w: 3.95,
+      h: 2.0,
       fill: { color: SOFT },
     });
-    s.addText(`0${i + 1}`, {
-      x: x + 0.25,
-      y: y + 0.3,
-      w: 3.4,
-      h: 0.35,
-      fontSize: 12,
-      color: MOTION,
-      fontFace: "Arial",
-      bold: true,
-    });
     s.addText(st[0], {
-      x: x + 0.25,
-      y: y + 0.7,
+      x: x + 0.28,
+      y: y + 0.28,
       w: 3.4,
-      h: 0.4,
-      fontSize: 22,
-      color: INK,
+      h: 0.3,
+      fontSize: 12,
+      color: st[3],
+      fontFace: "Calibri",
       bold: true,
-      fontFace: "Arial",
     });
     s.addText(st[1], {
-      x: x + 0.25,
-      y: y + 1.2,
+      x: x + 0.28,
+      y: y + 0.7,
+      w: 3.4,
+      h: 0.45,
+      fontSize: 22,
+      color: INK,
+      fontFace: "Georgia",
+    });
+    s.addText(st[2], {
+      x: x + 0.28,
+      y: y + 1.25,
       w: 3.4,
       h: 0.35,
       fontSize: 14,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
   });
   footer(s, 6);
 }
 
-// 7 Demo result
+// 7 Result
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("THE RESULT", {
-    x: 0.6,
-    y: 0.5,
-    w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
+  wash(s);
+  kicker(s, "THE RESULT");
   s.addText("An executive brief.\nA closed loop.\nA smarter graph.", {
-    x: 0.6,
-    y: 1.2,
+    x: 0.7,
+    y: 1.15,
     w: 12,
-    h: 2.0,
-    fontSize: 34,
+    h: 2.3,
+    fontSize: 36,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   s.addText(
-    "Motion doesn’t end in chat. It ends as durable memory — artifacts, edges, and status the next agent can trust.",
+    "Motion doesn’t end in chat. It ends as durable memory — artifacts, edges, and status the next agent can trust. Citations are inspectable. Debt is measurable.",
     {
-      x: 0.6,
-      y: 3.6,
+      x: 0.7,
+      y: 3.7,
       w: 11.5,
-      h: 1.2,
-      fontSize: 18,
+      h: 1.1,
+      fontSize: 17,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     },
   );
   s.addShape(pptx.shapes.RECTANGLE, {
-    x: 0.6,
+    x: 0.7,
     y: 5.1,
-    w: 12.1,
-    h: 1.2,
+    w: 11.9,
+    h: 1.15,
     fill: { color: SOFT },
   });
-  s.addText("Judge cue: switch to /app/runs and scroll the generated Acme Renewal Risk Brief.", {
-    x: 0.9,
+  s.addText("Judge cue: /app → Close My Morning → /app/runs → scroll ## Citations → debt before→after", {
+    x: 1.0,
     y: 5.4,
-    w: 11.5,
-    h: 0.6,
-    fontSize: 16,
+    w: 11.3,
+    h: 0.55,
+    fontSize: 15,
     color: ACCENT,
-    fontFace: "Arial",
+    fontFace: "Calibri",
   });
   footer(s, 7);
 }
@@ -487,131 +494,118 @@ function footer(slide, n) {
 // 8 Architecture
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("ARCHITECTURE", {
-    x: 0.6,
-    y: 0.5,
-    w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
+  wash(s);
+  kicker(s, "ARCHITECTURE");
   s.addText("Stateful substrate for agentic work", {
-    x: 0.6,
-    y: 1.0,
+    x: 0.7,
+    y: 0.95,
     w: 12,
-    h: 0.6,
+    h: 0.55,
     fontSize: 28,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   const layers = [
-    { t: "Web App", d: "Command · Graph · Loops · Runs", c: INK },
-    { t: "API + SSE", d: "REST surface + live telemetry", c: MEMORY },
-    { t: "Memory Plane", d: "Graph store · search · subgraph", c: MEMORY },
-    { t: "Motion Plane", d: "Pipeline runtime · artifacts", c: MOTION },
+    { t: "Web", d: "Command · Graph · Loops · Runs · Settings", c: ACCENT },
+    { t: "API", d: "REST · SSE · Zod contracts · demo sessions", c: MEMORY },
+    { t: "Memory", d: "SQLite WAL · optional FalkorDB mirror", c: MEMORY },
+    { t: "Motion", d: "Leased jobs · RocketRide · Linkup · Laser · Guild", c: MOTION },
   ];
   layers.forEach((l, i) => {
+    const y = 1.8 + i * 1.1;
     s.addShape(pptx.shapes.RECTANGLE, {
-      x: 0.6,
-      y: 1.9 + i * 1.1,
-      w: 12.1,
+      x: 0.7,
+      y,
+      w: 11.9,
       h: 0.95,
       fill: { color: SOFT },
     });
     s.addShape(pptx.shapes.RECTANGLE, {
-      x: 0.6,
-      y: 1.9 + i * 1.1,
-      w: 0.15,
+      x: 0.7,
+      y,
+      w: 0.12,
       h: 0.95,
-      fill: { color: l.c === INK ? ACCENT : l.c },
+      fill: { color: l.c },
     });
     s.addText(l.t, {
-      x: 1.1,
-      y: 2.05 + i * 1.1,
-      w: 4,
-      h: 0.6,
+      x: 1.15,
+      y: y + 0.22,
+      w: 2.5,
+      h: 0.5,
       fontSize: 18,
       color: INK,
       bold: true,
-      fontFace: "Arial",
-      valign: "middle",
+      fontFace: "Calibri",
     });
     s.addText(l.d, {
-      x: 5.5,
-      y: 2.05 + i * 1.1,
-      w: 6.8,
-      h: 0.6,
+      x: 4.0,
+      y: y + 0.22,
+      w: 8.2,
+      h: 0.5,
       fontSize: 16,
       color: MUTED,
-      fontFace: "Arial",
-      valign: "middle",
+      fontFace: "Calibri",
     });
   });
   footer(s, 8);
 }
 
-// 9 Sponsors / moat
+// 9 Sponsors
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("BUILT FOR THE STACK", {
-    x: 0.6,
-    y: 0.5,
+  wash(s);
+  kicker(s, "SPONSOR SDKS — ALL WIRED");
+  s.addText("Real clients. Honest DEMO fallbacks.", {
+    x: 0.7,
+    y: 0.95,
     w: 12,
-    h: 0.4,
-    fontSize: 14,
-    color: ACCENT,
-    bold: true,
-    fontFace: "Arial",
-  });
-  s.addText("Sponsor-native by design", {
-    x: 0.6,
-    y: 1.1,
-    w: 12,
-    h: 0.6,
-    fontSize: 30,
+    h: 0.55,
+    fontSize: 28,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   const sponsors = [
-    ["RocketRide", "Portable Motion pipelines"],
-    ["FalkorDB", "Low-latency graph memory"],
-    ["Linkup", "Live web context"],
-    ["LaserData", "Durable event streams"],
+    ["RocketRide", "Pipeline submit", MOTION],
+    ["FalkorDB", "Graph mirror", MEMORY],
+    ["Linkup", "Live research", ACCENT],
+    ["LaserData", "Event streams", MEMORY],
+    ["Guild.ai", "Experiment runs", ACCENT],
+    ["Snyk", "Security scan", MOTION],
   ];
   sponsors.forEach((sp, i) => {
-    const x = 0.6 + (i % 2) * 6.3;
-    const y = 2.1 + Math.floor(i / 2) * 2.0;
+    const x = 0.7 + (i % 3) * 4.15;
+    const y = 1.85 + Math.floor(i / 3) * 2.2;
     s.addShape(pptx.shapes.RECTANGLE, {
       x,
       y,
-      w: 5.9,
-      h: 1.7,
+      w: 3.95,
+      h: 1.95,
       fill: { color: SOFT },
     });
+    s.addShape(pptx.shapes.RECTANGLE, {
+      x,
+      y,
+      w: 3.95,
+      h: 0.08,
+      fill: { color: sp[2] },
+    });
     s.addText(sp[0], {
-      x: x + 0.35,
-      y: y + 0.35,
-      w: 5.2,
-      h: 0.45,
-      fontSize: 22,
-      color: ACCENT,
-      bold: true,
-      fontFace: "Arial",
+      x: x + 0.3,
+      y: y + 0.45,
+      w: 3.3,
+      h: 0.5,
+      fontSize: 20,
+      color: INK,
+      fontFace: "Georgia",
     });
     s.addText(sp[1], {
-      x: x + 0.35,
-      y: y + 0.9,
-      w: 5.2,
-      h: 0.45,
-      fontSize: 16,
+      x: x + 0.3,
+      y: y + 1.1,
+      w: 3.3,
+      h: 0.4,
+      fontSize: 14,
       color: MUTED,
-      fontFace: "Arial",
+      fontFace: "Calibri",
     });
   });
   footer(s, 9);
@@ -620,44 +614,51 @@ function footer(slide, n) {
 // 10 Close
 {
   const s = pptx.addSlide();
-  base(s);
-  s.addText("CLOSE THE LOOP", {
-    x: 0.6,
+  wash(s);
+  s.addShape(pptx.shapes.RECTANGLE, {
+    x: 0.7,
     y: 2.0,
-    w: 12,
-    h: 0.5,
-    fontSize: 14,
+    w: 0.12,
+    h: 2.8,
+    fill: { color: ACCENT },
+  });
+  s.addText("CLOSE THE LOOP", {
+    x: 1.15,
+    y: 2.1,
+    w: 11,
+    h: 0.4,
+    fontSize: 13,
     color: ACCENT,
     bold: true,
-    fontFace: "Arial",
+    fontFace: "Calibri",
+    charSpacing: 3,
   });
   s.addText("Continuum", {
-    x: 0.6,
+    x: 1.15,
     y: 2.6,
-    w: 12,
+    w: 11,
     h: 0.9,
-    fontSize: 48,
+    fontSize: 52,
     color: INK,
-    bold: true,
-    fontFace: "Arial",
+    fontFace: "Georgia",
   });
   s.addText("Memory that moves.\nThank you — questions welcome.", {
-    x: 0.6,
+    x: 1.15,
     y: 3.6,
-    w: 12,
-    h: 1.2,
-    fontSize: 24,
+    w: 11,
+    h: 1.0,
+    fontSize: 22,
     color: MUTED,
-    fontFace: "Arial",
+    fontFace: "Calibri",
   });
   s.addText("github.com/vnmoorthy/continuum-memory-meets-motion", {
-    x: 0.6,
-    y: 5.3,
-    w: 12,
+    x: 1.15,
+    y: 5.1,
+    w: 11,
     h: 0.4,
-    fontSize: 16,
+    fontSize: 15,
     color: ACCENT,
-    fontFace: "Arial",
+    fontFace: "Calibri",
   });
   footer(s, 10);
 }
@@ -665,9 +666,7 @@ function footer(slide, n) {
 const out = path.join(outDir, "Continuum-Memory-Meets-Motion.pptx");
 pptx
   .writeFile({ fileName: out })
-  .then(() => {
-    console.log("Wrote", out);
-  })
+  .then(() => console.log("Wrote", out))
   .catch((err) => {
     console.error(err);
     process.exit(1);

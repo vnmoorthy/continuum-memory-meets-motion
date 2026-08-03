@@ -17,13 +17,13 @@ import type { MemoryEdge, MemoryNode, NodeKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const kindColor: Record<NodeKind, string> = {
-  person: "#6ea8ff",
-  project: "#d6ff4b",
-  decision: "#ffc857",
-  artifact: "#ff8f5a",
-  loop: "#ff6b7a",
-  event: "#8f96a3",
-  goal: "#6dffb0",
+  person: "#5ec8c0",
+  project: "#e4ff5c",
+  decision: "#f0c14d",
+  artifact: "#e8956c",
+  loop: "#ff7a8a",
+  event: "#9aa3b0",
+  goal: "#7dffb3",
 };
 
 function GraphNode({ data }: NodeProps) {
@@ -36,7 +36,8 @@ function GraphNode({ data }: NodeProps) {
         data.selected ? "border-accent" : "border-line-strong",
       )}
       style={{
-        background: `color-mix(in oklab, ${color} 14%, #11151b)`,
+        background: `color-mix(in oklab, ${color} 16%, #0e1218)`,
+        borderRadius: 2,
       }}
     >
       <Handle type="target" position={Position.Left} className="!bg-muted !border-none !w-2 !h-2" />

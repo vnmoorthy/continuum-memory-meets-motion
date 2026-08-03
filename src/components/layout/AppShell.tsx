@@ -8,14 +8,13 @@ import {
   Home,
   Orbit,
   Settings2,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/app", label: "Command", icon: Home },
   { href: "/app/memory", label: "Memory", icon: GitBranch },
-  { href: "/app/loops", label: "Open Loops", icon: Orbit },
+  { href: "/app/loops", label: "Loops", icon: Orbit },
   { href: "/app/runs", label: "Motion", icon: Activity },
   { href: "/app/settings", label: "Settings", icon: Settings2 },
 ];
@@ -24,26 +23,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-line bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] backdrop-blur-xl">
-        <div className="border-b border-amber-800/40 bg-amber-950/40 px-4 py-1.5 text-center text-xs text-amber-100 md:px-6">
-          DEMO MODE — simulated Motion, research, and notify. No live connectors or outbound
-          delivery. Each browser session is an isolated workspace.
-        </div>
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 md:px-6">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center border border-line-strong bg-bg-soft">
-              <Sparkles className="h-4 w-4 text-accent" />
+    <div className="flex min-h-screen flex-col">
+      <div className="border-b border-amber-900/30 bg-amber-950/25 px-4 py-1.5 text-center text-[11px] leading-snug text-amber-100/90 md:px-6">
+        <span className="mono tracking-wider text-amber-200/90">DEMO</span>
+        <span className="mx-2 text-amber-200/40">·</span>
+        Simulated research & notify unless sponsor keys are set · isolated workspace per browser
+      </div>
+
+      <header className="sticky top-0 z-40 border-b border-line bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3.5 md:px-6">
+          <Link href="/" className="group flex min-w-0 items-center gap-3">
+            <span className="display text-xl leading-none transition group-hover:text-accent md:text-2xl">
+              Continuum
             </span>
-            <div>
-              <div className="display text-lg leading-none">Continuum</div>
-              <div className="mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                Memory → Motion
-              </div>
-            </div>
+            <span className="hidden mono text-[10px] uppercase tracking-[0.22em] text-faint sm:inline">
+              Open Loop OS
+            </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center md:flex" aria-label="Primary">
             {links.map(({ href, label, icon: Icon }) => {
               const active =
                 href === "/app" ? pathname === "/app" : pathname.startsWith(href);
@@ -51,14 +49,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={href}
                   href={href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-bg-soft text-ink"
-                      : "text-muted hover:bg-bg-soft/60 hover:text-ink",
+                    "nav-link flex items-center gap-2 px-3 py-2 text-sm",
+                    active ? "text-ink" : "text-muted hover:text-ink",
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-3.5 w-3.5 opacity-70" aria-hidden />
                   {label}
                 </Link>
               );
@@ -66,20 +63,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-2 chip sm:inline-flex border border-amber-700/40 bg-amber-950/30 text-amber-200">
-              DEMO
+            <span className="chip mobile-hide hidden items-center gap-2 sm:inline-flex">
+              <span className="live-dot" aria-hidden />
+              Graph live
             </span>
-            <span className="hidden items-center gap-2 chip sm:inline-flex">
-              <span className="live-dot" />
-              Workspace graph
-            </span>
-            <Link href="/app/loops" className="btn btn-primary text-sm">
+            <Link href="/app/loops" className="btn btn-primary py-2 text-sm">
               Close a loop
             </Link>
           </div>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto border-t border-line px-2 py-1 md:hidden">
+        <nav
+          className="flex gap-1 overflow-x-auto border-t border-line px-2 py-1 md:hidden"
+          aria-label="Mobile"
+        >
           {links.map(({ href, label }) => {
             const active =
               href === "/app" ? pathname === "/app" : pathname.startsWith(href);
@@ -87,6 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "whitespace-nowrap px-3 py-2 text-xs",
                   active ? "text-accent" : "text-muted",
@@ -96,10 +94,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-        </div>
+        </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-6">
+      <main id="main" className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-7 md:px-6 md:py-9">
         {children}
       </main>
     </div>
