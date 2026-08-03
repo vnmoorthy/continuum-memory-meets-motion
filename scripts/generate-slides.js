@@ -10,7 +10,7 @@ pptx.defineLayout({ name: "WIDE", width: 13.333, height: 7.5 });
 pptx.layout = "WIDE";
 pptx.author = "vnmoorthy";
 pptx.title = "Continuum — Open Loop OS";
-pptx.subject = "Memory Meets Motion · 3-minute pitch";
+pptx.subject = "Memory Meets Motion · Continuum";
 
 const BG = "07090C";
 const INK = "ECE6DA";

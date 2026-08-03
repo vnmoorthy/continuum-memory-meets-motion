@@ -6,30 +6,7 @@ Copy-paste these prompts into ChatGPT when you need polished wording during Memo
 
 ---
 
-## 1) Tighten the 3-minute pitch
-
-```text
-You are helping me refine a 3-minute hackathon pitch for Continuum (Open Loop OS).
-
-Product in one line: Continuum measures unfinished organizational work as Open Loop Debt, then closes it with Cited Motion agents that read a memory graph, produce deliverables with citations, and write results back so debt goes down.
-
-Demo seed: Acme Health renewal with $220k ARR sitting in open loops. Live path: /app → Close My Morning → /app/runs citations → debt before→after.
-
-Constraints:
-- Exactly ~450–500 spoken words (≈3 minutes at calm pace)
-- Structure: Hook (15s) → Problem (30s) → Product (30s) → Live demo narration cues (75s) → Architecture/sponsors (20s) → Close (10s)
-- No “we won”, no prize language, no overclaiming
-- Sound founder-confident, not markety
-
-Deliver:
-1. Full spoken script with [DEMO BEAT] markers
-2. A 30-second “elevator” cut of the same story
-3. Three alternate closing lines I can swap based on energy in the room
-```
-
----
-
-## 2) Judge Q&A cheat sheet
+## 1) Judge Q&A cheat sheet
 
 ```text
 Act as a tough but fair hackathon judge for Memory Meets Motion (themes: long-term AI memory + autonomous motion + stateful AI).
@@ -47,7 +24,7 @@ No winner/prize claims. No invented customers beyond the demo seed (Acme Health 
 
 ---
 
-## 3) LinkedIn post — RocketRide social track
+## 2) LinkedIn post — RocketRide social track
 
 ```text
 Write a LinkedIn post for the RocketRide social track about Continuum, built for Memory Meets Motion.
@@ -72,7 +49,7 @@ Do NOT say we won anything.
 
 ---
 
-## 4) Discord `/submit` blurb
+## 3) Discord `/submit` blurb
 
 ```text
 Write a Discord /submit (or project submission) blurb for Continuum.
@@ -89,31 +66,7 @@ No winner language. No “revolutionary”. Sound like an engineer submitting a 
 
 ---
 
-## 5) Live demo narration polish
-
-```text
-Polish live demo narration for Continuum. I click through this path while talking:
-
-1. /app — point at Open Loop Debt + $ at risk (Acme $220k)
-2. Click Close My Morning (or close Acme renewal brief)
-3. /app/runs — retrieve → reason → cited artifact → write-back
-4. Scroll to ## Citations — grounded in memory nodes
-5. Show debt before → after
-Optional: Watchdogs Scan now OR ingest residue on /app/loops
-
-Deliver:
-- Second-by-second talking points matched to each click (total ~75–90 seconds)
-- What to say if a run is slow / SSE lags
-- What to skip if I’m over time
-- One “wow” sentence when citations appear
-- One “wow” sentence when debt drops
-
-Keep language concrete. No hackathon-winner claims.
-```
-
----
-
-## 6) Competitive differentiation one-liners
+## 4) Competitive differentiation one-liners
 
 ```text
 Give me 10 sharp one-liners that differentiate Continuum from:
@@ -123,13 +76,13 @@ C) Project tools (Asana/Linear) with AI add-ons
 
 Each line should mention at least one of: Open Loop Debt, Cited Motion, write-back into graph memory, measurable $ at risk.
 
-Format as a table: Competitor class | Continuum line | When to use in pitch
+Format as a table: Competitor class | Continuum line | When to use
 Max 18 words per Continuum line. No hype adjectives like revolutionary/unprecedented. No win claims.
 ```
 
 ---
 
-## 7) Sponsor-fit soundbites (FalkorDB / RocketRide / Linkup / LaserData)
+## 5) Sponsor-fit soundbites (FalkorDB / RocketRide / Linkup / LaserData)
 
 ```text
 Write 4 sponsor-fit soundbites (≤25 words each) for Continuum mapped to:
@@ -144,7 +97,7 @@ Honest about what’s local/stubbed vs production-ready. No endorsement claims.
 
 ---
 
-## 8) README / About one-liner variants
+## 6) README / About one-liner variants
 
 ```text
 Rewrite these for GitHub About / social bio (each ≤160 chars and a 80-char cut):
@@ -162,4 +115,4 @@ No winner/prize language.
 1. Paste prompt → paste latest README “The idea” section if needed.  
 2. Ask ChatGPT to return **only** the deliverable (no preamble).  
 3. Before posting, strip any accidental “winner / award / first place” wording.  
-4. Prefer the dry variants for GitHub; save punchier lines for spoken pitch only.
+4. Prefer the dry variants for GitHub.
